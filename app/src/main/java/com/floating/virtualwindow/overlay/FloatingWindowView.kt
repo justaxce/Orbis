@@ -1,10 +1,14 @@
 package com.floating.virtualwindow.overlay
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.view.Gravity
@@ -14,6 +18,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -78,6 +83,13 @@ class FloatingWindowView(
     private var savedY: Int = 0
 
     private var isKeyboardFocusEnabled: Boolean = false
+    private var isKeyboardShifted: Boolean = false
+    private var preKeyboardY: Int = 0
+    private var preKeyboardHeight: Int = 0
+    private var keyboardAnimator: ValueAnimator? = null
+
+    var onNotificationReceived: (() -> Unit)? = null
+    var isMinimized: Boolean = false
 
     private var currentSurfaceView: SurfaceView? = null
     private var currentBrowserView: FloatingBrowserView? = null
@@ -135,6 +147,7 @@ class FloatingWindowView(
         setupResizeHandle()
         setupControls()
         setupOutsideTouchListener()
+        setupKeyboardListener()
     }
 
     private fun setupOutsideTouchListener() {
@@ -157,6 +170,8 @@ class FloatingWindowView(
             val displayMetrics = context.resources.displayMetrics
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    keyboardAnimator?.cancel()
+                    isKeyboardShifted = false
                     initialX = layoutParams.x
                     initialY = layoutParams.y
                     initialTouchX = event.rawX
@@ -362,6 +377,96 @@ class FloatingWindowView(
         }
         layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         updateLayout()
+    }
+
+    private fun setupKeyboardListener() {
+        view.viewTreeObserver.addOnGlobalLayoutListener {
+            if (view.parent == null) return@addOnGlobalLayoutListener
+            val displayMetrics = context.resources.displayMetrics
+            val screenHeight = displayMetrics.heightPixels
+            val r = Rect()
+            view.getWindowVisibleDisplayFrame(r)
+
+            val heightDiff = screenHeight - r.bottom
+            val isKeyboard = heightDiff > screenHeight * 0.15
+
+            if (isKeyboard) {
+                adjustForKeyboard(true, heightDiff)
+            } else if (isKeyboardShifted && heightDiff < screenHeight * 0.10) {
+                adjustForKeyboard(false, 0)
+            }
+        }
+    }
+
+    fun adjustForKeyboard(isKeyboardOpen: Boolean, reportedKbHeight: Int = 0) {
+        if (view.parent == null) return
+        val displayMetrics = context.resources.displayMetrics
+        val screenHeight = displayMetrics.heightPixels
+
+        if (isKeyboardOpen) {
+            if (!isKeyboardShifted) {
+                preKeyboardY = layoutParams.y
+                preKeyboardHeight = layoutParams.height
+                isKeyboardShifted = true
+            }
+
+            val kbHeight = if (reportedKbHeight > 150) reportedKbHeight else (screenHeight * 0.40).toInt()
+            val keyboardTop = screenHeight - kbHeight
+            val margin = (16 * displayMetrics.density).toInt()
+            val topLimit = (36 * displayMetrics.density).toInt()
+            val currentBottom = layoutParams.y + layoutParams.height
+
+            if (currentBottom > keyboardTop - margin) {
+                val overlap = currentBottom - (keyboardTop - margin)
+                val targetY = max(topLimit, layoutParams.y - overlap)
+
+                val availableHeight = (keyboardTop - margin) - targetY
+                val minHeight = (260 * displayMetrics.density).toInt()
+                val targetHeight = if (targetY + layoutParams.height > keyboardTop - margin) {
+                    max(minHeight, availableHeight)
+                } else {
+                    layoutParams.height
+                }
+
+                animateWindowPositionAndSize(targetY, targetHeight)
+            }
+        } else {
+            if (isKeyboardShifted) {
+                val restoreY = preKeyboardY
+                val restoreHeight = preKeyboardHeight
+                animateWindowPositionAndSize(restoreY, restoreHeight) {
+                    isKeyboardShifted = false
+                }
+            }
+        }
+    }
+
+    private fun animateWindowPositionAndSize(targetY: Int, targetHeight: Int, onEnd: (() -> Unit)? = null) {
+        keyboardAnimator?.cancel()
+        val startY = layoutParams.y
+        val startHeight = layoutParams.height
+
+        if (startY == targetY && startHeight == targetHeight) {
+            onEnd?.invoke()
+            return
+        }
+
+        keyboardAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 240
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { anim ->
+                val f = anim.animatedFraction
+                layoutParams.y = (startY + (targetY - startY) * f).toInt()
+                layoutParams.height = (startHeight + (targetHeight - startHeight) * f).toInt()
+                updateLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    onEnd?.invoke()
+                }
+            })
+            start()
+        }
     }
 
     private fun toggleMaximize() {
@@ -599,6 +704,22 @@ class FloatingWindowView(
         browserView.onFocusChanged = { hasFocus ->
             setWindowFocusable(hasFocus)
         }
+        browserView.onInputFocusChanged = { isFocused ->
+            if (isFocused) {
+                setWindowFocusable(true)
+                adjustForKeyboard(true, 0)
+            } else {
+                adjustForKeyboard(false, 0)
+            }
+        }
+        browserView.onKeyboardViewportChanged = { isOpen, kbHeightPx ->
+            adjustForKeyboard(isOpen, kbHeightPx)
+        }
+        browserView.onNotificationReceived = {
+            if (isMinimized) {
+                onNotificationReceived?.invoke()
+            }
+        }
         contentContainer.addView(browserView)
         browserView.loadUrl(url, asDesktop)
     }
@@ -620,6 +741,12 @@ class FloatingWindowView(
     }
 
     private fun cleanContent() {
+        if (isKeyboardShifted) {
+            keyboardAnimator?.cancel()
+            layoutParams.y = preKeyboardY
+            layoutParams.height = preKeyboardHeight
+            isKeyboardShifted = false
+        }
         currentBrowserView?.destroy()
         currentBrowserView = null
         currentCalculatorView = null
@@ -672,6 +799,7 @@ class FloatingWindowView(
     }
 
     fun show() {
+        isMinimized = false
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
@@ -717,6 +845,13 @@ class FloatingWindowView(
      * Preserves the active WebView, scroll position, and running session intact.
      */
     fun minimize() {
+        isMinimized = true
+        if (isKeyboardShifted) {
+            keyboardAnimator?.cancel()
+            layoutParams.y = preKeyboardY
+            layoutParams.height = preKeyboardHeight
+            isKeyboardShifted = false
+        }
         setWindowFocusable(false)
         if (view.parent != null) {
             try {
@@ -732,6 +867,7 @@ class FloatingWindowView(
      * Automatically adapts aspect ratio if screen orientation changed while in bubble.
      */
     fun restore() {
+        isMinimized = false
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels

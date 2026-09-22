@@ -138,7 +138,11 @@ class FloatingOverlayService : Service() {
                 floatingWindowView?.close()
                 floatingBubbleView?.hide()
             }
-        )
+        ).apply {
+            onNotificationReceived = {
+                floatingBubbleView?.setNotificationDotVisible(true)
+            }
+        }
 
         val dismissTarget = BubbleDismissTargetView(this, windowManager)
         bubbleDismissTargetView = dismissTarget
@@ -149,11 +153,13 @@ class FloatingOverlayService : Service() {
             dismissTargetView = dismissTarget,
             onBubbleTapped = {
                 // Bubble tapped -> Restore window without reloading
+                floatingBubbleView?.setNotificationDotVisible(false)
                 floatingBubbleView?.hide()
                 floatingWindowView?.restore()
             },
             onBubbleDismissed = {
                 // Bubble dropped onto close cross target -> close session completely!
+                floatingBubbleView?.setNotificationDotVisible(false)
                 floatingBubbleView?.hide()
                 floatingWindowView?.close()
                 Toast.makeText(this, "Closed", Toast.LENGTH_SHORT).show()

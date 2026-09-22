@@ -11,8 +11,8 @@ android {
         applicationId = "com.floating.virtualwindow"
         minSdk = 26
         targetSdk = 34
-        versionCode = 20
-        versionName = "1.2.6"
+        versionCode = 21
+        versionName = "1.2.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += listOf("en")

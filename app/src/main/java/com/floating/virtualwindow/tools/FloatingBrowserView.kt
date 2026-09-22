@@ -64,6 +64,9 @@ class FloatingBrowserView @JvmOverloads constructor(
     private var currentSelectedText: String = ""
 
     var onFocusChanged: ((Boolean) -> Unit)? = null
+    var onInputFocusChanged: ((Boolean) -> Unit)? = null
+    var onKeyboardViewportChanged: ((isOpen: Boolean, keyboardHeightPx: Int) -> Unit)? = null
+    var onNotificationReceived: (() -> Unit)? = null
 
     init {
         val view = LayoutInflater.from(context).inflate(R.layout.view_floating_browser, this, true)
@@ -155,6 +158,7 @@ class FloatingBrowserView @JvmOverloads constructor(
                 pbLoading.visibility = View.GONE
                 injectSelectionListener()
                 injectHorizontalScrollAndCodeFix()
+                injectKeyboardAndNotificationListeners()
                 try {
                     CookieManager.getInstance().flush()
                 } catch (e: Exception) {
@@ -165,6 +169,11 @@ class FloatingBrowserView @JvmOverloads constructor(
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onReceivedTitle(view: WebView?, title: String?) {
+                super.onReceivedTitle(view, title)
+                checkNotificationInTitle(title)
+            }
+
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 pbLoading.progress = newProgress
                 if (newProgress >= 100) {
@@ -328,6 +337,7 @@ class FloatingBrowserView @JvmOverloads constructor(
 
         etUrl.setOnFocusChangeListener { _, hasFocus ->
             onFocusChanged?.invoke(hasFocus)
+            onInputFocusChanged?.invoke(hasFocus)
             if (hasFocus) {
                 etUrl.postDelayed({
                     val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
@@ -552,6 +562,117 @@ class FloatingBrowserView @JvmOverloads constructor(
         webView.reload()
     }
 
+    private fun injectKeyboardAndNotificationListeners() {
+        val js = """
+            (function() {
+                if (window.__orbis_kb_notif_injected) return;
+                window.__orbis_kb_notif_injected = true;
+
+                document.addEventListener('focusin', function(e) {
+                    var el = e.target;
+                    if (!el) return;
+                    var tag = (el.tagName || '').toLowerCase();
+                    var isInput = tag === 'input' || tag === 'textarea' || el.isContentEditable;
+                    if (isInput) {
+                        if (window.OrbisBridge && window.OrbisBridge.onInputFocusState) {
+                            window.OrbisBridge.onInputFocusState(true);
+                        }
+                        setTimeout(function() {
+                            try {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } catch(err){}
+                        }, 300);
+                    }
+                }, true);
+
+                document.addEventListener('focusout', function(e) {
+                    var el = e.target;
+                    if (!el) return;
+                    var tag = (el.tagName || '').toLowerCase();
+                    var isInput = tag === 'input' || tag === 'textarea' || el.isContentEditable;
+                    if (isInput) {
+                        setTimeout(function() {
+                            var act = document.activeElement;
+                            var actTag = (act && act.tagName ? act.tagName : '').toLowerCase();
+                            var stillIn = actTag === 'input' || actTag === 'textarea' || (act && act.isContentEditable);
+                            if (!stillIn && window.OrbisBridge && window.OrbisBridge.onInputFocusState) {
+                                window.OrbisBridge.onInputFocusState(false);
+                            }
+                        }, 200);
+                    }
+                }, true);
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', function() {
+                        var diff = window.innerHeight - window.visualViewport.height;
+                        var isKb = diff > 100;
+                        var kbPx = Math.round(diff * (window.devicePixelRatio || 1));
+                        if (window.OrbisBridge && window.OrbisBridge.onViewportResized) {
+                            window.OrbisBridge.onViewportResized(isKb, kbPx);
+                        }
+                    });
+                }
+
+                var checkTitle = function(str) {
+                    if (window.OrbisBridge && window.OrbisBridge.onWebTitleChanged) {
+                        window.OrbisBridge.onWebTitleChanged(str || document.title || '');
+                    }
+                };
+                var titleEl = document.querySelector('title');
+                if (titleEl) {
+                    new MutationObserver(function() {
+                        checkTitle(document.title);
+                    }).observe(titleEl, { subtree: true, characterData: true, childList: true });
+                }
+
+                if (!window.Notification) {
+                    window.Notification = function(title, options) {
+                        if (window.OrbisBridge && window.OrbisBridge.onWebNotificationReceived) {
+                            window.OrbisBridge.onWebNotificationReceived(title || '');
+                        }
+                    };
+                    window.Notification.permission = 'granted';
+                    window.Notification.requestPermission = function(cb) {
+                        if (cb) cb('granted');
+                        return Promise.resolve('granted');
+                    };
+                } else {
+                    var origNotif = window.Notification;
+                    window.Notification = function(title, options) {
+                        if (window.OrbisBridge && window.OrbisBridge.onWebNotificationReceived) {
+                            window.OrbisBridge.onWebNotificationReceived(title || '');
+                        }
+                        return new origNotif(title, options);
+                    };
+                    window.Notification.permission = 'granted';
+                }
+
+                if (navigator.setAppBadge) {
+                    var origBadge = navigator.setAppBadge;
+                    navigator.setAppBadge = function(count) {
+                        if (window.OrbisBridge && window.OrbisBridge.onWebNotificationReceived) {
+                            window.OrbisBridge.onWebNotificationReceived('badge:' + (count || 1));
+                        }
+                        return origBadge.apply(this, arguments);
+                    };
+                }
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
+
+    private fun checkNotificationInTitle(title: String?) {
+        if (title.isNullOrBlank()) return
+        val t = title.trim()
+        val hasBadge = t.matches(Regex("""^[\(\[\{]\s*\d+\+?\s*[\)\]\}].*""")) ||
+                t.startsWith("•") ||
+                t.startsWith("*") ||
+                t.contains(Regex("""\(\d+\)"""))
+        if (hasBadge) {
+            onNotificationReceived?.invoke()
+        }
+    }
+
     fun destroy() {
         dismissOAuthPopup()
         webView.stopLoading()
@@ -563,6 +684,35 @@ class FloatingBrowserView @JvmOverloads constructor(
         fun onTextSelected(text: String) {
             post {
                 handleSelectedText(text)
+            }
+        }
+
+        @JavascriptInterface
+        fun onInputFocusState(isFocused: Boolean) {
+            post {
+                onFocusChanged?.invoke(isFocused)
+                onInputFocusChanged?.invoke(isFocused)
+            }
+        }
+
+        @JavascriptInterface
+        fun onViewportResized(keyboardOpen: Boolean, heightDiffPx: Int) {
+            post {
+                onKeyboardViewportChanged?.invoke(keyboardOpen, heightDiffPx)
+            }
+        }
+
+        @JavascriptInterface
+        fun onWebNotificationReceived(info: String) {
+            post {
+                onNotificationReceived?.invoke()
+            }
+        }
+
+        @JavascriptInterface
+        fun onWebTitleChanged(title: String) {
+            post {
+                checkNotificationInTitle(title)
             }
         }
     }

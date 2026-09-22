@@ -30,6 +30,10 @@ class FloatingBubbleView(
     val view: View = LayoutInflater.from(context).inflate(R.layout.view_floating_bubble, null)
     val layoutParams: WindowManager.LayoutParams
     private val ivBubbleIcon: ImageView = view.findViewById(R.id.ivBubbleIcon)
+    private val vNotificationDot: View = view.findViewById(R.id.vNotificationDot)
+
+    private var hasUnreadNotification: Boolean = false
+    val isNotificationDotVisible: Boolean get() = hasUnreadNotification
 
     private var initialX: Int = 0
     private var initialY: Int = 0
@@ -207,10 +211,48 @@ class FloatingBubbleView(
         }
     }
 
+    fun setNotificationDotVisible(visible: Boolean) {
+        hasUnreadNotification = visible
+        if (visible) {
+            vNotificationDot.visibility = View.VISIBLE
+            vNotificationDot.scaleX = 0f
+            vNotificationDot.scaleY = 0f
+            vNotificationDot.animate()
+                .scaleX(1.25f)
+                .scaleY(1.25f)
+                .setDuration(160)
+                .withEndAction {
+                    vNotificationDot.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(100)
+                        .start()
+                }
+                .start()
+        } else {
+            vNotificationDot.animate()
+                .scaleX(0f)
+                .scaleY(0f)
+                .setDuration(120)
+                .withEndAction {
+                    vNotificationDot.visibility = View.GONE
+                }
+                .start()
+        }
+    }
+
     fun show() {
         view.scaleX = 1f
         view.scaleY = 1f
         view.alpha = 1f
+
+        if (hasUnreadNotification) {
+            vNotificationDot.visibility = View.VISIBLE
+            vNotificationDot.scaleX = 1f
+            vNotificationDot.scaleY = 1f
+        } else {
+            vNotificationDot.visibility = View.GONE
+        }
 
         if (view.parent == null) {
             try {
