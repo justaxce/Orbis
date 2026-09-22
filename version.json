@@ -1,10 +1,10 @@
 {
-  "versionCode": 21,
-  "versionName": "1.2.7",
+  "versionCode": 22,
+  "versionName": "1.2.8",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.7/Orbis.apk",
-  "apkSize": "2.4M",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.8/Orbis.apk",
+  "apkSize": "2.7M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Soft Keyboard Auto-Lift: window smoothly glides upward when typing so input field is never covered, and auto-restores when keyboard closes\n• Unread Notification Red Dot: floating bubble shows a vibrant red dot badge when web apps receive notifications or messages\n• Real Brand Icons: bundled official icons for 50+ Web Apps even if not installed\n• Drag-to-Dismiss: drag floating bubble to bottom-center cross (✕) to close app instantly",
+  "releaseNotes": "• Browser & App Theme: now dynamically follows phone's default theme (Day/Night Mode)\n• System Language Integration: browser requests and webpages now match phone's default language\n• Soft Keyboard Auto-Lift: window smoothly glides upward when typing so input field is never covered\n• Unread Notification Red Dot: floating bubble shows a vibrant red dot badge when web apps receive notifications\n• Real Brand Icons: bundled official icons for 50+ Web Apps even if not installed",
   "forceUpdate": false
 }
