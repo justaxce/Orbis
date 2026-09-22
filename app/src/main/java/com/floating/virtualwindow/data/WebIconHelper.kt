@@ -10,6 +10,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import androidx.core.content.ContextCompat
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -17,39 +18,41 @@ object WebIconHelper {
     private val iconCache = ConcurrentHashMap<String, Drawable>()
 
     private val PALETTE = intArrayOf(
-        0xFF10A37F.toInt(), // ChatGPT Teal
-        0xFFE1306C.toInt(), // Instagram Pink
-        0xFFFF0000.toInt(), // YouTube Red
-        0xFF25D366.toInt(), // WhatsApp Green
-        0xFF0088CC.toInt(), // Telegram Blue
-        0xFF1DA1F2.toInt(), // Twitter Blue
-        0xFF1DB954.toInt(), // Spotify Green
-        0xFF5865F2.toInt(), // Discord Indigo
-        0xFFFF4500.toInt(), // Reddit Orange
-        0xFF4285F4.toInt(), // Google Blue
-        0xFFEA4335.toInt(), // Google Red
-        0xFF34A853.toInt(), // Google Green
-        0xFFFBBC05.toInt(), // Google Yellow
-        0xFF6C5CE7.toInt(), // Purple
-        0xFF0984E3.toInt(), // Ocean Blue
-        0xFF00B894.toInt(), // Mint Green
-        0xFFD63031.toInt(), // Coral Red
-        0xFF6C5CE7.toInt()  // Indigo
+        0xFF10A37F.toInt(), 0xFFE1306C.toInt(), 0xFFFF0000.toInt(),
+        0xFF25D366.toInt(), 0xFF0088CC.toInt(), 0xFF1DA1F2.toInt(),
+        0xFF1DB954.toInt(), 0xFF5865F2.toInt(), 0xFFFF4500.toInt(),
+        0xFF4285F4.toInt(), 0xFFEA4335.toInt(), 0xFF34A853.toInt(),
+        0xFFFBBC05.toInt(), 0xFF6C5CE7.toInt(), 0xFF0984E3.toInt(),
+        0xFF00B894.toInt(), 0xFFD63031.toInt()
     )
 
     fun getIconForApp(context: Context, name: String, packageName: String): Drawable {
-        // 1. Try local installed app icon first if package is installed on device
-        try {
-            val pm = context.packageManager
-            pm.getApplicationInfo(packageName, 0)
-            return pm.getApplicationIcon(packageName)
-        } catch (_: Exception) {}
-
-        // 2. Check memory cache
+        // 1. Check in-memory cache first
         val cached = iconCache[packageName]
         if (cached != null) return cached
 
-        // 3. Generate clean branded squircle letter avatar
+        // 2. Try local installed app icon first if package is installed on device
+        try {
+            val pm = context.packageManager
+            pm.getApplicationInfo(packageName, 0)
+            val installedIcon = pm.getApplicationIcon(packageName)
+            iconCache[packageName] = installedIcon
+            return installedIcon
+        } catch (_: Exception) {}
+
+        // 3. Check bundled official high-res brand icon from WebAppCatalog
+        val curated = WebAppCatalog.findCuratedApp(packageName)
+        if (curated != null && curated.iconRes != 0) {
+            try {
+                val drawable = ContextCompat.getDrawable(context, curated.iconRes)
+                if (drawable != null) {
+                    iconCache[packageName] = drawable
+                    return drawable
+                }
+            } catch (_: Exception) {}
+        }
+
+        // 4. Generate clean branded squircle letter avatar as fallback
         val size = 96
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)

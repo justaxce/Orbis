@@ -14,8 +14,13 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.content.Intent
+import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -98,6 +103,8 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.javaScriptCanOpenWindowsAutomatically = true
         settings.allowFileAccess = true
         settings.allowContentAccess = true
+        settings.setGeolocationEnabled(true)
+        settings.cacheMode = WebSettings.LOAD_DEFAULT
 
         // Enable horizontal & vertical scrollbars for desktop sites and preformatted code
         webView.isHorizontalScrollBarEnabled = true
@@ -121,6 +128,23 @@ class FloatingBrowserView @JvmOverloads constructor(
         webView.addJavascriptInterface(OrbisBridge(), "OrbisBridge")
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val uri = request?.url ?: return false
+                val scheme = uri.scheme?.lowercase() ?: return false
+                if (scheme == "http" || scheme == "https") {
+                    return false
+                }
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    // Suppress unknown scheme crashes
+                }
+                return true
+            }
+
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 pbLoading.visibility = View.VISIBLE
                 etUrl.setText(url)
@@ -147,6 +171,42 @@ class FloatingBrowserView @JvmOverloads constructor(
                     pbLoading.visibility = View.GONE
                 } else {
                     pbLoading.visibility = View.VISIBLE
+                }
+            }
+
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                try {
+                    request?.grant(request.resources)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                callback?.invoke(origin, true, false)
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+                try {
+                    val chooser = Intent.createChooser(intent, "Choose File").apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(chooser)
+                    return true
+                } catch (e: Exception) {
+                    filePathCallback?.onReceiveValue(null)
+                    return false
                 }
             }
 

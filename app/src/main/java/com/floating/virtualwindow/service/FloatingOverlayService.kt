@@ -12,10 +12,12 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.floating.virtualwindow.MainActivity
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.PreferencesManager
+import com.floating.virtualwindow.overlay.BubbleDismissTargetView
 import com.floating.virtualwindow.overlay.EdgeHandleView
 import com.floating.virtualwindow.overlay.FloatingBubbleView
 import com.floating.virtualwindow.overlay.FloatingWindowView
@@ -31,6 +33,7 @@ class FloatingOverlayService : Service() {
     private var sidebarDockView: SidebarDockView? = null
     private var floatingWindowView: FloatingWindowView? = null
     private var floatingBubbleView: FloatingBubbleView? = null
+    private var bubbleDismissTargetView: BubbleDismissTargetView? = null
 
     private var lastAppIcon: Drawable? = null
 
@@ -137,11 +140,25 @@ class FloatingOverlayService : Service() {
             }
         )
 
-        floatingBubbleView = FloatingBubbleView(this, windowManager) {
-            // Bubble tapped -> Restore window without reloading
-            floatingBubbleView?.hide()
-            floatingWindowView?.restore()
-        }
+        val dismissTarget = BubbleDismissTargetView(this, windowManager)
+        bubbleDismissTargetView = dismissTarget
+
+        floatingBubbleView = FloatingBubbleView(
+            context = this,
+            windowManager = windowManager,
+            dismissTargetView = dismissTarget,
+            onBubbleTapped = {
+                // Bubble tapped -> Restore window without reloading
+                floatingBubbleView?.hide()
+                floatingWindowView?.restore()
+            },
+            onBubbleDismissed = {
+                // Bubble dropped onto close cross target -> close session completely!
+                floatingBubbleView?.hide()
+                floatingWindowView?.close()
+                Toast.makeText(this, "Closed", Toast.LENGTH_SHORT).show()
+            }
+        )
 
         // Show edge handle by default
         edgeHandleView?.show()
@@ -189,6 +206,8 @@ class FloatingOverlayService : Service() {
         sidebarDockView?.hide()
         floatingWindowView?.close()
         floatingBubbleView?.hide()
+        bubbleDismissTargetView?.hide()
+        bubbleDismissTargetView = null
         super.onDestroy()
     }
 

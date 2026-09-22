@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/llDismissRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <!-- Circle Target Button -->
+    <FrameLayout
+        android:id="@+id/flDismissTarget"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/bg_bubble_dismiss_target"
+        android:elevation="16dp">
+
+        <ImageView
+            android:id="@+id/ivDismissCross"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_dismiss_cross"
+            android:contentDescription="Close App Session" />
+    </FrameLayout>
+
+    <!-- Subtitle Label -->
+    <TextView
+        android:id="@+id/tvDismissLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Drag here to close"
+        android:textColor="#B3FFFFFF"
+        android:textSize="11sp"
+        android:fontFamily="sans-serif-medium"
+        android:elevation="16dp" />
+</LinearLayout>
