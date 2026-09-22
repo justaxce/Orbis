@@ -1,13 +1,10 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.7",
+  "versionCode": 9,
+  "versionName": "1.0.8",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.7/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.8/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Auto-detection of Landscape games (Free Fire, BGMI, COD, Asphalt, etc.)
-• 16:9 Widescreen Gaming Monitor format (no rotation, no black bars)
-• 1-Tap 🔄 Aspect Ratio Toggle in window header (9:16 Portrait <-> 16:9 Landscape)
-• Smart proportional corner resizing for both 16:9 and 9:16 modes",
+  "releaseNotes": "• Fixed in-app update checking with direct GitHub API & CDN cache-busting\n• Cleaned floating window header (removed unnecessary keyboard icon)\n• Enhanced version feedback and zero-delay OTA detection",
   "forceUpdate": false
 }
