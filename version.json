@@ -1,10 +1,10 @@
 {
-  "versionCode": 19,
-  "versionName": "1.2.5",
+  "versionCode": 21,
+  "versionName": "1.2.7",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.5/Orbis.apk",
-  "apkSize": "2.2M",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.7/Orbis.apk",
+  "apkSize": "2.4M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Pure Web Apps mode: only verified floating web apps shown\n• All apps open in Orbis traditional popup with full size & button controls\n• Removed bare system popups and complex setup",
+  "releaseNotes": "• Soft Keyboard Auto-Lift: window smoothly glides upward when typing so input field is never covered, and auto-restores when keyboard closes\n• Unread Notification Red Dot: floating bubble shows a vibrant red dot badge when web apps receive notifications or messages\n• Real Brand Icons: bundled official icons for 50+ Web Apps even if not installed\n• Drag-to-Dismiss: drag floating bubble to bottom-center cross (✕) to close app instantly",
   "forceUpdate": false
 }
