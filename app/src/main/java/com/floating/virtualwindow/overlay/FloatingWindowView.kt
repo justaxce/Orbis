@@ -474,6 +474,12 @@ class FloatingWindowView(
             return
         }
 
+        // 1b. If Shizuku is running but Orbis lacks permission, prompt immediately
+        if (GuestLauncher.isShizukuRunningWithoutPermission()) {
+            GuestLauncher.requestShizukuPermission()
+            Toast.makeText(context, "Grant Shizuku permission to open $appName", Toast.LENGTH_LONG).show()
+        }
+
         // 2. Wireless Debugging is NOT active -> Automatically fallback to Web app if available
         val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
         if (webFallback != null) {
@@ -508,7 +514,11 @@ class FloatingWindowView(
         tvDesc.text = context.getString(R.string.setup_required_desc)
 
         setupView.findViewById<Button>(R.id.btnOpenSetupGuide)?.setOnClickListener {
-            WirelessGuideDialog(context).show()
+            if (GuestLauncher.isShizukuRunningWithoutPermission()) {
+                GuestLauncher.requestShizukuPermission()
+            } else {
+                WirelessGuideDialog(context).show()
+            }
         }
 
         setupView.findViewById<Button>(R.id.btnLaunchAppNormally)?.setOnClickListener {

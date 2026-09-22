@@ -18,6 +18,24 @@ object GuestLauncher {
         }
     }
 
+    fun isShizukuRunningWithoutPermission(): Boolean {
+        return try {
+            Shizuku.pingBinder() && Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun requestShizukuPermission(requestCode: Int = 8001) {
+        try {
+            if (Shizuku.pingBinder()) {
+                Shizuku.requestPermission(requestCode)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun launchApp(
         context: Context,
         packageName: String,

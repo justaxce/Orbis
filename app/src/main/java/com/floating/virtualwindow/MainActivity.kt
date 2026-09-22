@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.floating.virtualwindow.data.AppRepository
 import com.floating.virtualwindow.data.PreferencesManager
+import com.floating.virtualwindow.engine.GuestLauncher
 import com.floating.virtualwindow.service.FloatingOverlayService
 import com.floating.virtualwindow.ui.AppAdapter
 import com.floating.virtualwindow.ui.QuickLaunchAdapter
@@ -37,6 +38,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import rikka.shizuku.Shizuku
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,6 +47,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appAdapter: AppAdapter
     private lateinit var quickLaunchAdapter: QuickLaunchAdapter
     private lateinit var updateManager: UpdateManager
+
+    private val shizukuBinderListener = Shizuku.OnBinderReceivedListener {
+        if (preferencesManager.engineMode == PreferencesManager.MODE_ADVANCED) {
+            if (GuestLauncher.isShizukuRunningWithoutPermission()) {
+                GuestLauncher.requestShizukuPermission(SHIZUKU_PERMISSION_CODE)
+            }
+        }
+    }
+
+    private val shizukuPermissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+        if (requestCode == SHIZUKU_PERMISSION_CODE && grantResult == PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Shizuku permission granted! Native apps enabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Top Bar
     private lateinit var llStatusToggle: View
@@ -105,6 +121,13 @@ class MainActivity : AppCompatActivity() {
         appRepository = AppRepository(this)
         updateManager = UpdateManager(this)
 
+        try {
+            Shizuku.addBinderReceivedListenerSticky(shizukuBinderListener)
+            Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         initViews()
         setupSplashScreen()
         setupListeners()
@@ -121,6 +144,19 @@ class MainActivity : AppCompatActivity() {
         updateServiceState()
         syncDockSideSettings()
         switchAutoMinimize.isChecked = preferencesManager.autoMinimizeOnOutsideTap
+        if (preferencesManager.engineMode == PreferencesManager.MODE_ADVANCED && GuestLauncher.isShizukuRunningWithoutPermission()) {
+            GuestLauncher.requestShizukuPermission(SHIZUKU_PERMISSION_CODE)
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            Shizuku.removeBinderReceivedListener(shizukuBinderListener)
+            Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        super.onDestroy()
     }
 
     private fun initViews() {
@@ -253,10 +289,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         rgEngineMode.setOnCheckedChangeListener { _, checkedId ->
-            preferencesManager.engineMode = if (checkedId == R.id.rbModeAdvanced) {
-                PreferencesManager.MODE_ADVANCED
+            if (checkedId == R.id.rbModeAdvanced) {
+                preferencesManager.engineMode = PreferencesManager.MODE_ADVANCED
+                if (GuestLauncher.isShizukuRunningWithoutPermission()) {
+                    GuestLauncher.requestShizukuPermission(SHIZUKU_PERMISSION_CODE)
+                } else if (!GuestLauncher.isShizukuAvailable()) {
+                    Toast.makeText(this, "Start Shizuku to run native apps", Toast.LENGTH_LONG).show()
+                }
             } else {
-                PreferencesManager.MODE_ZERO_SETUP
+                preferencesManager.engineMode = PreferencesManager.MODE_ZERO_SETUP
             }
             updateEngineSummary()
         }
@@ -490,5 +531,9 @@ class MainActivity : AppCompatActivity() {
             val pinnedApps = appRepository.getSelectedApps()
             quickLaunchAdapter.submitList(pinnedApps)
         }
+    }
+
+    companion object {
+        private const val SHIZUKU_PERMISSION_CODE = 8001
     }
 }

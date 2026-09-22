@@ -20,6 +20,7 @@ import com.floating.virtualwindow.overlay.EdgeHandleView
 import com.floating.virtualwindow.overlay.FloatingBubbleView
 import com.floating.virtualwindow.overlay.FloatingWindowView
 import com.floating.virtualwindow.overlay.SidebarDockView
+import rikka.shizuku.Shizuku
 
 class FloatingOverlayService : Service() {
 
@@ -33,10 +34,20 @@ class FloatingOverlayService : Service() {
 
     private var lastAppIcon: Drawable? = null
 
+    private val shizukuBinderListener = Shizuku.OnBinderReceivedListener {
+        // Shizuku binder received in service
+    }
+
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         preferencesManager = PreferencesManager(this)
+
+        try {
+            Shizuku.addBinderReceivedListenerSticky(shizukuBinderListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         startForegroundNotification()
         initializeOverlayViews()
@@ -170,6 +181,11 @@ class FloatingOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        try {
+            Shizuku.removeBinderReceivedListener(shizukuBinderListener)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         edgeHandleView?.hide()
         sidebarDockView?.hide()
         floatingWindowView?.close()

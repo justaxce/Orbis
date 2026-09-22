@@ -24,8 +24,7 @@ class VirtualDisplayManager(private val context: Context) {
         surface: Surface
     ): Int {
         release()
-        val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC or
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
+        val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
 
         return try {
             virtualDisplay = displayManager.createVirtualDisplay(
