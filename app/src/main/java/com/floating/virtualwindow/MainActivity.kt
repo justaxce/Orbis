@@ -12,6 +12,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
@@ -31,6 +32,7 @@ import com.floating.virtualwindow.ui.WirelessGuideDialog
 import com.floating.virtualwindow.updater.UpdateManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.materialswitch.MaterialSwitch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -51,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pageApps: View
     private lateinit var pageSettings: View
     private lateinit var bottomNav: BottomNavigationView
+    private lateinit var layoutSplash: View
 
     // Workspace Views
     private lateinit var bannerPermissions: View
@@ -97,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         updateManager = UpdateManager(this)
 
         initViews()
+        setupSplashScreen()
         setupListeners()
         loadInstalledApps()
         checkSilentUpdateOnLaunch()
@@ -113,6 +117,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        layoutSplash = findViewById(R.id.layoutSplash)
         llStatusToggle = findViewById(R.id.llStatusToggle)
         dotStatus = findViewById(R.id.dotStatus)
         tvStatusText = findViewById(R.id.tvStatusText)
@@ -359,12 +364,70 @@ class MainActivity : AppCompatActivity() {
         tvPinnedCount.text = getString(R.string.selected_apps_count, count)
     }
 
+    private fun setupSplashScreen() {
+        val ivSplashLogo = findViewById<ImageView>(R.id.ivSplashLogo)
+        val tvSplashTitle = findViewById<TextView>(R.id.tvSplashTitle)
+        val tvSplashTagline = findViewById<TextView>(R.id.tvSplashTagline)
+        val tvSplashVersion = findViewById<TextView>(R.id.tvSplashVersion)
+
+        tvSplashVersion.text = "v${updateManager.getCurrentVersionName()}"
+
+        ivSplashLogo.alpha = 0f
+        ivSplashLogo.scaleX = 0.75f
+        ivSplashLogo.scaleY = 0.75f
+
+        tvSplashTitle.alpha = 0f
+        tvSplashTitle.translationY = 24f
+
+        tvSplashTagline.alpha = 0f
+        tvSplashTagline.translationY = 24f
+
+        ivSplashLogo.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(550)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+
+        tvSplashTitle.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setStartDelay(180)
+            .setDuration(450)
+            .start()
+
+        tvSplashTagline.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setStartDelay(300)
+            .setDuration(450)
+            .start()
+    }
+
+    private fun dismissSplashScreen() {
+        layoutSplash.animate()
+            .alpha(0f)
+            .setDuration(350)
+            .withEndAction {
+                layoutSplash.visibility = View.GONE
+            }
+            .start()
+    }
+
     private fun loadInstalledApps() {
         lifecycleScope.launch {
+            val startTime = System.currentTimeMillis()
             val apps = appRepository.getInstalledApps()
             appAdapter.submitList(apps)
             updatePinnedCount()
             refreshQuickLaunch()
+
+            val elapsed = System.currentTimeMillis() - startTime
+            val remaining = (1200 - elapsed).coerceAtLeast(0)
+            delay(remaining)
+
+            dismissSplashScreen()
         }
     }
 
