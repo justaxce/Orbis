@@ -11,11 +11,10 @@ android {
         applicationId = "com.floating.virtualwindow"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "1.2.7"
+        versionCode = 22
+        versionName = "1.2.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        resourceConfigurations += listOf("en")
     }
 
     signingConfigs {

@@ -840,6 +840,14 @@ class FloatingWindowView(
         }
     }
 
+    fun handleThemeChanged() {
+        view.setBackgroundResource(R.drawable.bg_floating_window)
+        windowHeader.setBackgroundResource(R.drawable.bg_header)
+        tvHeaderTitle.setTextColor(context.getColor(R.color.text_primary))
+        currentBrowserView?.applyThemeAndLanguage()
+        updateLayout()
+    }
+
     /**
      * Non-destructive hide for minimizing into a bubble.
      * Preserves the active WebView, scroll position, and running session intact.

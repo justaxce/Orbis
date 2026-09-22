@@ -197,6 +197,7 @@ class FloatingOverlayService : Service() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         floatingWindowView?.handleOrientationChanged()
+        floatingWindowView?.handleThemeChanged()
         edgeHandleView?.handleOrientationChanged()
         sidebarDockView?.handleOrientationChanged()
         floatingBubbleView?.handleOrientationChanged()

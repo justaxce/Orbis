@@ -1,34 +1,34 @@
 <resources>
-    <!-- Primary Brand Colors: Obsidian & Champagne Gold -->
-    <color name="primary">#DFC07A</color>
-    <color name="primary_light">#EED596</color>
-    <color name="primary_dark">#C4A45A</color>
-    <color name="accent">#DFC07A</color>
+    <!-- Primary Brand Colors: Champagne Gold -->
+    <color name="primary">#C4A45A</color>
+    <color name="primary_light">#DFC07A</color>
+    <color name="primary_dark">#A38338</color>
+    <color name="accent">#C4A45A</color>
 
-    <color name="success">#34D399</color>
-    <color name="warning">#FBBF24</color>
-    <color name="error">#F87171</color>
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
 
-    <!-- Dark Theme Obsidian Surfaces -->
-    <color name="background">#090B0E</color>
-    <color name="surface">#12161F</color>
-    <color name="surface_elevated">#181E2A</color>
-    <color name="surface_variant">#1A202C</color>
-    <color name="border">#1E2533</color>
-    <color name="border_subtle">#161B26</color>
+    <!-- Light Theme Surfaces -->
+    <color name="background">#F8F9FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_elevated">#F1F3F5</color>
+    <color name="surface_variant">#E9ECEF</color>
+    <color name="border">#DEE2E6</color>
+    <color name="border_subtle">#E9ECEF</color>
 
     <!-- Typography -->
-    <color name="text_primary">#F1F5F9</color>
-    <color name="text_secondary">#8B95A5</color>
-    <color name="text_muted">#525C6E</color>
+    <color name="text_primary">#1A1C1E</color>
+    <color name="text_secondary">#5E6A75</color>
+    <color name="text_muted">#9AA0A6</color>
 
-    <!-- Floating Window & Overlay (Tinted Glass) -->
-    <color name="window_overlay">#E610141C</color>
-    <color name="window_header">#181E2A</color>
-    <color name="window_border">#252E3E</color>
-    <color name="dock_background">#EE10141C</color>
-    <color name="handle_tint">#B30E121A</color>
-    <color name="handle_border">#33DFC07A</color>
+    <!-- Floating Window & Overlay (Light Glass) -->
+    <color name="window_overlay">#F5FFFFFF</color>
+    <color name="window_header">#F8F9FA</color>
+    <color name="window_border">#D1D5DB</color>
+    <color name="dock_background">#F2FFFFFF</color>
+    <color name="handle_tint">#D9FFFFFF</color>
+    <color name="handle_border">#4DC4A45A</color>
 
     <color name="transparent">#00000000</color>
     <color name="white">#FFFFFF</color>

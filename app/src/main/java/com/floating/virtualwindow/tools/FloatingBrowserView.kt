@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Message
+import java.util.Locale
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.KeyEvent
@@ -108,6 +111,7 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.allowContentAccess = true
         settings.setGeolocationEnabled(true)
         settings.cacheMode = WebSettings.LOAD_DEFAULT
+        applyThemeAndLanguage()
 
         // Enable horizontal & vertical scrollbars for desktop sites and preformatted code
         webView.isHorizontalScrollBarEnabled = true
@@ -387,22 +391,65 @@ class FloatingBrowserView @JvmOverloads constructor(
 
     fun loadUrl(url: String, asDesktop: Boolean = false) {
         isDesktopMode = asDesktop
-        applyUserAgent()
+        applyThemeAndLanguage()
         updateDesktopButtonUi()
-        webView.loadUrl(url)
+        val headers = createLanguageHeaders()
+        webView.loadUrl(url, headers)
     }
 
     private fun toggleDesktopMode() {
         isDesktopMode = !isDesktopMode
-        applyUserAgent()
+        applyThemeAndLanguage()
         updateDesktopButtonUi()
         val msg = if (isDesktopMode) "Desktop site requested" else "Mobile site requested"
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         webView.reload()
     }
 
+    fun applyThemeAndLanguage() {
+        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isSystemDark = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                webView.settings.forceDark = if (isSystemDark) WebSettings.FORCE_DARK_ON else WebSettings.FORCE_DARK_OFF
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                webView.settings.isAlgorithmicDarkeningAllowed = isSystemDark
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        val bgColor = context.getColor(R.color.background)
+        webView.setBackgroundColor(bgColor)
+
+        applyUserAgent()
+    }
+
     private fun applyUserAgent() {
-        webView.settings.userAgentString = if (isDesktopMode) DESKTOP_USER_AGENT else ANDROID_MOBILE_USER_AGENT
+        if (isDesktopMode) {
+            webView.settings.userAgentString = DESKTOP_USER_AGENT
+        } else {
+            try {
+                webView.settings.userAgentString = WebSettings.getDefaultUserAgent(context)
+            } catch (e: Exception) {
+                webView.settings.userAgentString = ANDROID_MOBILE_USER_AGENT
+            }
+        }
+    }
+
+    private fun createLanguageHeaders(): Map<String, String> {
+        val locale = Locale.getDefault()
+        val tag = locale.toLanguageTag()
+        val lang = locale.language
+        return mapOf(
+            "Accept-Language" to "$tag,$lang;q=0.9,en;q=0.8"
+        )
     }
 
     private fun updateDesktopButtonUi() {
@@ -460,7 +507,8 @@ class FloatingBrowserView @JvmOverloads constructor(
                 "https://www.google.com/search?q=" + java.net.URLEncoder.encode(input, "UTF-8")
             }
         }
-        webView.loadUrl(input)
+        applyThemeAndLanguage()
+        webView.loadUrl(input, createLanguageHeaders())
     }
 
     private fun handleOAuthPopupWindow(resultMsg: Message?): Boolean {
@@ -474,7 +522,24 @@ class FloatingBrowserView @JvmOverloads constructor(
             settings.domStorageEnabled = true
             settings.databaseEnabled = true
             settings.setSupportMultipleWindows(false)
-            settings.userAgentString = ANDROID_MOBILE_USER_AGENT
+            val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            val isSystemDark = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    settings.forceDark = if (isSystemDark) WebSettings.FORCE_DARK_ON else WebSettings.FORCE_DARK_OFF
+                } catch (e: Exception) {}
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                try {
+                    settings.isAlgorithmicDarkeningAllowed = isSystemDark
+                } catch (e: Exception) {}
+            }
+            try {
+                settings.userAgentString = WebSettings.getDefaultUserAgent(context)
+            } catch (e: Exception) {
+                settings.userAgentString = ANDROID_MOBILE_USER_AGENT
+            }
+            setBackgroundColor(context.getColor(R.color.background))
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
@@ -563,6 +628,12 @@ class FloatingBrowserView @JvmOverloads constructor(
     }
 
     private fun injectKeyboardAndNotificationListeners() {
+        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isSystemDark = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+        val locale = Locale.getDefault()
+        val langTag = locale.toLanguageTag()
+        val lang = locale.language
+
         val js = """
             (function() {
                 if (window.__orbis_kb_notif_injected) return;
@@ -656,6 +727,28 @@ class FloatingBrowserView @JvmOverloads constructor(
                         return origBadge.apply(this, arguments);
                     };
                 }
+
+                // Enforce system theme (Dark/Light) and system language on webpage
+                try {
+                    var meta = document.querySelector('meta[name="color-scheme"]');
+                    if (!meta) {
+                        meta = document.createElement('meta');
+                        meta.name = 'color-scheme';
+                        (document.head || document.documentElement).appendChild(meta);
+                    }
+                    meta.content = ${if (isSystemDark) "'dark light'" else "'light dark'"};
+                } catch(e) {}
+
+                try {
+                    Object.defineProperty(navigator, 'language', {
+                        get: function() { return '$langTag'; },
+                        configurable: true
+                    });
+                    Object.defineProperty(navigator, 'languages', {
+                        get: function() { return ['$langTag', '$lang', 'en']; },
+                        configurable: true
+                    });
+                } catch(e) {}
             })();
         """.trimIndent()
         webView.evaluateJavascript(js, null)
