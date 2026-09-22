@@ -2,4 +2,6 @@
 <paths>
     <cache-path name="update_cache" path="updates/" />
     <external-cache-path name="update_ext_cache" path="updates/" />
+    <external-path name="external_files" path="." />
+    <files-path name="files" path="." />
 </paths>

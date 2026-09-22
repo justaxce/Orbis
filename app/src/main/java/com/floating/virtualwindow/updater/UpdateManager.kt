@@ -2,12 +2,14 @@ package com.floating.virtualwindow.updater
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.floating.virtualwindow.engine.GuestLauncher
 import kotlinx.coroutines.Dispatchers
@@ -298,10 +300,11 @@ class UpdateManager(private val context: Context) {
     fun installApk(apkFile: File): Boolean {
         if (!apkFile.exists()) return false
 
-        // Attempt silent install via Shizuku if active and permitted, then immediately restore FloatingOverlayService
+        // 1. Attempt silent install via Shizuku if active and permitted
         if (GuestLauncher.isShizukuAvailable()) {
             try {
-                val cmd = "pm install -r \"${apkFile.absolutePath}\" && am start-foreground-service -n com.floating.virtualwindow/.service.FloatingOverlayService -a com.floating.virtualwindow.START"
+                // Stream APK via stdin to avoid shell permission issues on /data/user/0/...
+                val cmd = "cat > /data/local/tmp/orbis_update.apk && pm install -r /data/local/tmp/orbis_update.apk && rm -f /data/local/tmp/orbis_update.apk && am start-foreground-service -n com.floating.virtualwindow/.service.FloatingOverlayService -a com.floating.virtualwindow.START"
                 val method = rikka.shizuku.Shizuku::class.java.getDeclaredMethod(
                     "newProcess",
                     Array<String>::class.java,
@@ -309,14 +312,23 @@ class UpdateManager(private val context: Context) {
                     String::class.java
                 ).apply { isAccessible = true }
                 val process = method.invoke(null, arrayOf("sh", "-c", cmd), null, null) as? Process
-                process?.waitFor()
-                return true
+                if (process != null) {
+                    apkFile.inputStream().use { input ->
+                        process.outputStream.use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    val exitCode = process.waitFor()
+                    if (exitCode == 0) {
+                        return true
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        // Standard Android PackageInstaller intent via FileProvider
+        // 2. Standard Android PackageInstaller intent via FileProvider
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
@@ -327,6 +339,8 @@ class UpdateManager(private val context: Context) {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(settingsIntent)
+                    Toast.makeText(context, "Please allow 'Install unknown apps' for Orbis to update", Toast.LENGTH_LONG).show()
+                    return false
                 }
             }
 
@@ -341,6 +355,12 @@ class UpdateManager(private val context: Context) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+
+            val resolved = context.packageManager.queryIntentActivities(installIntent, PackageManager.MATCH_DEFAULT_ONLY)
+            for (info in resolved) {
+                context.grantUriPermission(info.activityInfo.packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
             context.startActivity(installIntent)
             return true
         } catch (e: Exception) {
