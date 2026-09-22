@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="update_cache" path="updates/" />
+    <cache-path name="camera_photos" path="camera/" />
     <external-cache-path name="update_ext_cache" path="updates/" />
     <external-path name="external_files" path="." />
     <files-path name="files" path="." />

@@ -1,5 +1,9 @@
 package com.floating.virtualwindow.tools
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.floating.virtualwindow.bridge.WebBridgeManager
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -188,18 +192,14 @@ class FloatingBrowserView @JvmOverloads constructor(
             }
 
             override fun onPermissionRequest(request: PermissionRequest?) {
-                try {
-                    request?.grant(request.resources)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                handlePermissionRequest(request)
             }
 
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
             ) {
-                callback?.invoke(origin, true, false)
+                handleGeolocationPermission(origin, callback)
             }
 
             override fun onShowFileChooser(
@@ -207,20 +207,7 @@ class FloatingBrowserView @JvmOverloads constructor(
                 filePathCallback: ValueCallback<Array<Uri>>?,
                 fileChooserParams: FileChooserParams?
             ): Boolean {
-                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
-                    type = "*/*"
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                }
-                try {
-                    val chooser = Intent.createChooser(intent, "Choose File").apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(chooser)
-                    return true
-                } catch (e: Exception) {
-                    filePathCallback?.onReceiveValue(null)
-                    return false
-                }
+                return handleShowFileChooser(filePathCallback, fileChooserParams)
             }
 
             override fun onCreateWindow(
@@ -559,6 +546,25 @@ class FloatingBrowserView @JvmOverloads constructor(
             }
 
             webChromeClient = object : WebChromeClient() {
+                override fun onPermissionRequest(request: PermissionRequest?) {
+                    handlePermissionRequest(request)
+                }
+
+                override fun onGeolocationPermissionsShowPrompt(
+                    origin: String?,
+                    callback: GeolocationPermissions.Callback?
+                ) {
+                    handleGeolocationPermission(origin, callback)
+                }
+
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
+                    return handleShowFileChooser(filePathCallback, fileChooserParams)
+                }
+
                 override fun onCloseWindow(window: WebView?) {
                     dismissOAuthPopup()
                 }
@@ -625,6 +631,96 @@ class FloatingBrowserView @JvmOverloads constructor(
             e.printStackTrace()
         }
         webView.reload()
+    }
+
+    private fun handlePermissionRequest(request: PermissionRequest?) {
+        if (request == null) return
+        val resources = request.resources ?: return
+
+        val neededPermissions = mutableListOf<String>()
+        for (res in resources) {
+            when (res) {
+                PermissionRequest.RESOURCE_AUDIO_CAPTURE -> {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+                PermissionRequest.RESOURCE_VIDEO_CAPTURE -> {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.CAMERA)
+                    }
+                }
+            }
+        }
+
+        if (neededPermissions.isEmpty()) {
+            try {
+                request.grant(resources)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            WebBridgeManager.requestNativePermissions(context, neededPermissions.toTypedArray()) { granted ->
+                post {
+                    try {
+                        if (granted) {
+                            request.grant(resources)
+                        } else {
+                            request.deny()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleGeolocationPermission(
+        origin: String?,
+        callback: GeolocationPermissions.Callback?
+    ) {
+        if (callback == null) return
+        val fineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarseLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+        if (fineLocation == PackageManager.PERMISSION_GRANTED || coarseLocation == PackageManager.PERMISSION_GRANTED) {
+            callback.invoke(origin, true, false)
+        } else {
+            val permissions = arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+            WebBridgeManager.requestNativePermissions(context, permissions) { granted ->
+                post {
+                    try {
+                        callback.invoke(origin, granted, false)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleShowFileChooser(
+        filePathCallback: ValueCallback<Array<Uri>>?,
+        fileChooserParams: WebChromeClient.FileChooserParams?
+    ): Boolean {
+        if (filePathCallback == null) return false
+
+        val acceptTypes = fileChooserParams?.acceptTypes ?: emptyArray()
+        val allowMultiple = fileChooserParams?.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE
+        val isCaptureEnabled = fileChooserParams?.isCaptureEnabled ?: false
+
+        WebBridgeManager.startFileChooser(
+            context = context,
+            acceptTypes = acceptTypes,
+            allowMultiple = allowMultiple,
+            isCaptureEnabled = isCaptureEnabled,
+            callback = filePathCallback
+        )
+        return true
     }
 
     private fun injectKeyboardAndNotificationListeners() {
