@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/justaxce/Orbis/releases/latest"><img src="https://img.shields.io/github/v/release/justaxce/Orbis?color=DFC07A&label=Version" alt="Release" /></a>
+  <a href="https://github.com/justaxce/Orbis/releases"><img src="https://img.shields.io/github/downloads/justaxce/Orbis/total?color=DFC07A&label=Downloads" alt="Downloads" /></a>
   <a href="https://github.com/justaxce/Orbis/releases/latest"><img src="https://img.shields.io/badge/APK%20Size-2.2%20MB-emerald" alt="APK Size" /></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-blue" alt="Android" />
   <img src="https://img.shields.io/badge/Developer-Ace%20%2F%20InfernoDev-DFC07A" alt="Developer" />
