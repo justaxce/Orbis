@@ -351,33 +351,21 @@ class FloatingWindowView(
 
         cleanContent()
 
-        // Check if we should open via Web engine or VirtualDisplay
-        val prefs = PreferencesManager(context)
-        if (prefs.engineMode == PreferencesManager.MODE_ZERO_SETUP) {
-            when (packageName) {
-                "com.whatsapp" -> {
-                    openBrowser("https://web.whatsapp.com", "WhatsApp Web", asDesktop = true)
-                    return
-                }
-                "com.instagram.android" -> {
-                    openBrowser("https://www.instagram.com", "Instagram", asDesktop = false)
-                    return
-                }
-                "com.android.chrome" -> {
-                    openBrowser("https://www.google.com", "Browser", asDesktop = false)
-                    return
-                }
-            }
-        }
-
-        // If Wireless Debugging / Shizuku is not available, do not show a blank screen!
-        if (!GuestLauncher.isShizukuAvailable()) {
-            showSetupRequired(packageName, appName)
+        // 1. If Wireless Debugging (Shizuku) is active, ALWAYS launch the real native app in Virtual Display!
+        if (GuestLauncher.isShizukuAvailable()) {
+            setupVirtualDisplay(packageName, icon)
             return
         }
 
-        // Open in Virtual Display
-        setupVirtualDisplay(packageName)
+        // 2. Wireless Debugging is NOT active -> Check for Web fallback
+        val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
+        if (webFallback != null) {
+            openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop)
+            return
+        }
+
+        // 3. No Web fallback available (offline app, camera, system settings) -> Show Setup Required
+        showSetupRequired(packageName, appName)
     }
 
     private fun showSetupRequired(packageName: String, appName: String) {
@@ -404,7 +392,7 @@ class FloatingWindowView(
         contentContainer.addView(setupView)
     }
 
-    private fun setupVirtualDisplay(packageName: String) {
+    private fun setupVirtualDisplay(packageName: String, icon: Drawable? = null) {
         val surfaceView = SurfaceView(context)
         currentSurfaceView = surfaceView
         contentContainer.addView(surfaceView)
@@ -421,7 +409,7 @@ class FloatingWindowView(
                 touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
 
                 GuestLauncher.launchApp(context, packageName, displayId) { name, url ->
-                    openBrowser(url, name)
+                    openBrowser(url, name, icon = icon)
                 }
             }
 
@@ -441,9 +429,18 @@ class FloatingWindowView(
         }
     }
 
-    fun openBrowser(url: String, title: String = "Browser", asDesktop: Boolean = false) {
+    fun openBrowser(
+        url: String,
+        title: String = "Browser",
+        icon: Drawable? = null,
+        asDesktop: Boolean = false
+    ) {
         tvHeaderTitle.text = title
-        ivHeaderIcon.setImageResource(R.drawable.ic_browser)
+        if (icon != null) {
+            ivHeaderIcon.setImageDrawable(icon)
+        } else {
+            ivHeaderIcon.setImageResource(R.drawable.ic_browser)
+        }
         cleanContent()
 
         val browserView = FloatingBrowserView(context)

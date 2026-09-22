@@ -26,30 +26,17 @@ object GuestLauncher {
     ): Boolean {
         val prefs = PreferencesManager(context)
 
-        // If in Advanced Mode and Shizuku is running:
-        if (prefs.engineMode == PreferencesManager.MODE_ADVANCED && isShizukuAvailable()) {
+        // If Shizuku / Wireless Debugging is active, ALWAYS launch the real native app!
+        if (isShizukuAvailable()) {
             val launched = launchViaShizuku(context, packageName, targetDisplayId)
             if (launched) return true
         }
 
-        // Zero-Setup Mode:
-        // 1. If it's WhatsApp or Instagram, offer embedded web app or native freeform
-        when (packageName) {
-            "com.whatsapp" -> {
-                // WhatsApp Web inside the floating window container
-                onWebFallbackRequested?.invoke("WhatsApp", "https://web.whatsapp.com")
-                return true
-            }
-            "com.instagram.android" -> {
-                // Instagram Web inside the floating window container
-                onWebFallbackRequested?.invoke("Instagram", "https://www.instagram.com")
-                return true
-            }
-            "com.android.chrome" -> {
-                // Full floating web browser
-                onWebFallbackRequested?.invoke("Browser", "https://www.google.com")
-                return true
-            }
+        // Otherwise, check if app has a web fallback
+        val webInfo = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
+        if (webInfo != null) {
+            onWebFallbackRequested?.invoke(webInfo.title, webInfo.url)
+            return true
         }
 
         // 2. Try launching in Freeform / Pop-up view mode

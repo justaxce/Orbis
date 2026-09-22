@@ -7,5 +7,6 @@ data class AppInfo(
     val appName: String,
     val icon: Drawable?,
     var isSelected: Boolean = false,
-    val isSystemApp: Boolean = false
+    val isSystemApp: Boolean = false,
+    val hasWebVersion: Boolean = false
 )

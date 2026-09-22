@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -77,6 +78,17 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.useWideViewPort = true
         settings.builtInZoomControls = true
         settings.displayZoomControls = false
+        settings.mediaPlaybackRequiresUserGesture = false
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+
+        // Enable Cookies (including 3rd-party cookies for login sessions)
+        try {
+            val cookieManager = CookieManager.getInstance()
+            cookieManager.setAcceptCookie(true)
+            cookieManager.setAcceptThirdPartyCookies(webView, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         webView.isLongClickable = true
         webView.isHapticFeedbackEnabled = true
@@ -244,12 +256,19 @@ class FloatingBrowserView @JvmOverloads constructor(
 
     fun loadUrl(url: String, asDesktop: Boolean = false) {
         if (asDesktop) {
-            val desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            webView.settings.userAgentString = desktopUserAgent
+            webView.settings.userAgentString = DESKTOP_USER_AGENT
         } else {
-            webView.settings.userAgentString = null
+            // Authentic Android Mobile User Agent ensures websites render in full mobile touch mode
+            webView.settings.userAgentString = ANDROID_MOBILE_USER_AGENT
         }
         webView.loadUrl(url)
+    }
+
+    companion object {
+        const val ANDROID_MOBILE_USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        const val DESKTOP_USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
     private fun loadFromInput() {

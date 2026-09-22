@@ -51,11 +51,13 @@ class AppAdapter(
         private val ivIcon: ImageView = itemView.findViewById(R.id.ivAppIcon)
         private val tvName: TextView = itemView.findViewById(R.id.tvAppName)
         private val tvPackage: TextView = itemView.findViewById(R.id.tvPackageName)
+        private val tvWebBadge: TextView = itemView.findViewById(R.id.tvWebBadge)
         private val cbSelect: MaterialCheckBox = itemView.findViewById(R.id.cbSelectApp)
 
         fun bind(app: AppInfo) {
             tvName.text = app.appName
             tvPackage.text = app.packageName
+            tvWebBadge.visibility = if (app.hasWebVersion) View.VISIBLE else View.GONE
             if (app.icon != null) {
                 ivIcon.setImageDrawable(app.icon)
             } else {

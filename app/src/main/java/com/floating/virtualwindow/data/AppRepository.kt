@@ -42,6 +42,7 @@ class AppRepository(private val context: Context) {
             } catch (e: Exception) {
                 false
             }
+            val hasWeb = WebAppCatalog.hasWebVersion(context, packageName)
 
             apps.add(
                 AppInfo(
@@ -49,7 +50,8 @@ class AppRepository(private val context: Context) {
                     appName = appName,
                     icon = icon,
                     isSelected = selectedPackages.contains(packageName),
-                    isSystemApp = isSystem
+                    isSystemApp = isSystem,
+                    hasWebVersion = hasWeb
                 )
             )
         }
