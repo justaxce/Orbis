@@ -452,14 +452,14 @@ class FloatingWindowView(
         if (icon != null) {
             ivHeaderIcon.setImageDrawable(icon)
         } else {
-            ivHeaderIcon.setImageResource(R.mipmap.ic_launcher)
+            ivHeaderIcon.setImageResource(R.drawable.ic_browser)
         }
 
         cleanContent()
 
         // Auto-detect environment:
         // 1. Is the current screen/device in landscape mode (e.g. game running or phone rotated horizontally)?
-        // 2. Or is the target app specifically a landscape game (Free Fire, BGMI, COD, etc.)?
+        // 2. Or is the target app specifically a landscape game/service?
         val displayMetrics = context.resources.displayMetrics
         val isScreenLandscape = displayMetrics.widthPixels > displayMetrics.heightPixels ||
                 context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -468,45 +468,16 @@ class FloatingWindowView(
         // Automatically open in landscape if device is landscape OR if it's a landscape app
         applyAspectRatio(isScreenLandscape || isAppLandscape)
 
-        // 1. Check if user is in Zero Setup (Web) mode and app has a web version
+        // Resolve Web URL and open in Orbis traditional popup window
         val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
-        if (preferencesManager.engineMode == PreferencesManager.MODE_ZERO_SETUP && webFallback != null) {
-            openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
-            return
-        }
-
-        // 2. If Shizuku is active, launch real native app in Freeform Floating Window Mode!
-        if (GuestLauncher.isShizukuAvailable()) {
-            val launched = GuestLauncher.launchViaFreeformShizuku(context, packageName)
-            if (launched) {
-                close()
-                Toast.makeText(context, "$appName opened in floating window", Toast.LENGTH_SHORT).show()
-                return
-            }
-        }
-
-        // 2b. If Shizuku is running but Orbis lacks permission, prompt immediately
-        if (GuestLauncher.isShizukuRunningWithoutPermission()) {
-            GuestLauncher.requestShizukuPermission()
-            Toast.makeText(context, "Grant Shizuku permission to open $appName", Toast.LENGTH_LONG).show()
-        }
-
-        // 3. Fallback to Web version if available
         if (webFallback != null) {
-            Toast.makeText(context, "Using Web mode for $appName", Toast.LENGTH_SHORT).show()
             openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
             return
         }
 
-        // 4. Secondary fallback: native system Freeform (e.g. Samsung Pop-up view / Stock Freeform)
-        val launchedFreeform = com.floating.virtualwindow.engine.FreeformLauncher.launchAppInFreeform(context, packageName)
-        if (launchedFreeform) {
-            close()
-            return
-        }
-
-        // 5. No web version and no freeform available -> Show Setup Required in Orbis window
-        showSetupRequired(packageName, appName)
+        // Web search fallback if not in catalog
+        val searchUrl = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(appName, "UTF-8")
+        openBrowser(searchUrl, appName, icon = icon, asDesktop = false, forceRatioCheck = false)
     }
 
     private fun handleNativeLaunchFailure(packageName: String, appName: String, icon: Drawable?) {

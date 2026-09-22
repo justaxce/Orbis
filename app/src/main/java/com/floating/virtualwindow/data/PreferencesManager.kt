@@ -32,14 +32,7 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putInt(KEY_WINDOW_HEIGHT, value).apply()
 
     fun getSelectedPackages(): Set<String> {
-        val defaultPackages = setOf(
-            "com.whatsapp",
-            "com.instagram.android",
-            "com.android.chrome",
-            "com.google.android.youtube",
-            "com.google.android.calculator"
-        )
-        return prefs.getStringSet(KEY_SELECTED_PACKAGES, defaultPackages) ?: defaultPackages
+        return prefs.getStringSet(KEY_SELECTED_PACKAGES, DEFAULT_PACKAGES) ?: DEFAULT_PACKAGES
     }
 
     fun setSelectedPackages(packages: Set<String>) {
@@ -73,5 +66,16 @@ class PreferencesManager(context: Context) {
 
         const val MODE_ZERO_SETUP = 0
         const val MODE_ADVANCED = 1
+
+        val DEFAULT_PACKAGES = setOf(
+            "com.google.android.youtube",
+            "com.whatsapp",
+            "com.instagram.android",
+            "com.openai.chatgpt",
+            "com.spotify.music",
+            "com.google.android.apps.maps",
+            "com.twitter.android",
+            "com.google.android.googlequicksearchbox"
+        )
     }
 }

@@ -38,11 +38,8 @@ class QuickLaunchAdapter(
 
         fun bind(app: AppInfo) {
             tvName.text = app.appName
-            if (app.icon != null) {
-                ivIcon.setImageDrawable(app.icon)
-            } else {
-                ivIcon.setImageResource(R.mipmap.ic_launcher)
-            }
+            val displayIcon = app.icon ?: com.floating.virtualwindow.data.WebIconHelper.getIconForApp(itemView.context, app.appName, app.packageName)
+            ivIcon.setImageDrawable(displayIcon)
             itemView.setOnClickListener {
                 onAppTapped(app)
             }

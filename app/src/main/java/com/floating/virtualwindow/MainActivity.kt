@@ -144,9 +144,6 @@ class MainActivity : AppCompatActivity() {
         updateServiceState()
         syncDockSideSettings()
         switchAutoMinimize.isChecked = preferencesManager.autoMinimizeOnOutsideTap
-        if (preferencesManager.engineMode == PreferencesManager.MODE_ADVANCED && GuestLauncher.isShizukuRunningWithoutPermission()) {
-            GuestLauncher.requestShizukuPermission(SHIZUKU_PERMISSION_CODE)
-        }
     }
 
     override fun onDestroy() {
@@ -230,11 +227,7 @@ class MainActivity : AppCompatActivity() {
 
         syncDockSideSettings()
 
-        if (preferencesManager.engineMode == PreferencesManager.MODE_ADVANCED) {
-            findViewById<android.widget.RadioButton>(R.id.rbModeAdvanced)?.isChecked = true
-        } else {
-            findViewById<android.widget.RadioButton>(R.id.rbModeZeroSetup)?.isChecked = true
-        }
+        preferencesManager.engineMode = PreferencesManager.MODE_ZERO_SETUP
         updateEngineSummary()
     }
 
@@ -286,24 +279,6 @@ class MainActivity : AppCompatActivity() {
             if (preferencesManager.isServiceEnabled) {
                 FloatingOverlayService.updateDockSide(this)
             }
-        }
-
-        rgEngineMode.setOnCheckedChangeListener { _, checkedId ->
-            if (checkedId == R.id.rbModeAdvanced) {
-                preferencesManager.engineMode = PreferencesManager.MODE_ADVANCED
-                if (GuestLauncher.isShizukuRunningWithoutPermission()) {
-                    GuestLauncher.requestShizukuPermission(SHIZUKU_PERMISSION_CODE)
-                } else if (!GuestLauncher.isShizukuAvailable()) {
-                    Toast.makeText(this, "Start Shizuku to run native apps", Toast.LENGTH_LONG).show()
-                }
-            } else {
-                preferencesManager.engineMode = PreferencesManager.MODE_ZERO_SETUP
-            }
-            updateEngineSummary()
-        }
-
-        btnShizukuGuide.setOnClickListener {
-            WirelessGuideDialog(this).show()
         }
 
         btnCheckUpdates.setOnClickListener {
@@ -445,13 +420,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateEngineSummary() {
-        if (preferencesManager.engineMode == PreferencesManager.MODE_ADVANCED) {
-            tvCurrentEngine.text = getString(R.string.mode_advanced)
-            tvEngineDesc.text = getString(R.string.mode_advanced_desc)
-        } else {
-            tvCurrentEngine.text = getString(R.string.mode_zero_setup)
-            tvEngineDesc.text = getString(R.string.mode_zero_setup_desc)
-        }
+        tvCurrentEngine.text = getString(R.string.mode_zero_setup)
+        tvEngineDesc.text = getString(R.string.mode_zero_setup_desc)
     }
 
     private fun updatePinnedCount() {

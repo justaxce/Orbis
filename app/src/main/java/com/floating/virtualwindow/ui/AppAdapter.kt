@@ -57,12 +57,9 @@ class AppAdapter(
         fun bind(app: AppInfo) {
             tvName.text = app.appName
             tvPackage.text = app.packageName
-            tvWebBadge.visibility = if (app.hasWebVersion) View.VISIBLE else View.GONE
-            if (app.icon != null) {
-                ivIcon.setImageDrawable(app.icon)
-            } else {
-                ivIcon.setImageResource(R.mipmap.ic_launcher)
-            }
+            tvWebBadge.visibility = View.VISIBLE
+            val displayIcon = app.icon ?: com.floating.virtualwindow.data.WebIconHelper.getIconForApp(itemView.context, app.appName, app.packageName)
+            ivIcon.setImageDrawable(displayIcon)
 
             cbSelect.setOnCheckedChangeListener(null)
             cbSelect.isChecked = app.isSelected

@@ -11,97 +11,408 @@ data class WebAppInfo(
     val asDesktop: Boolean = false
 )
 
+data class CuratedWebApp(
+    val id: String,
+    val name: String,
+    val url: String,
+    val asDesktop: Boolean = false,
+    val alternativePackages: List<String> = emptyList(),
+    val category: String = "Popular"
+)
+
 object WebAppCatalog {
 
     /**
-     * Tier 1: Curated High-Performance Catalog for 50+ popular services.
-     * Maps Android package names to verified mobile web endpoints.
+     * Canonical list of high-quality curated Web Apps.
+     * Each app has guaranteed web compatibility in Orbis's floating popup window.
      */
-    private val CATALOG: Map<String, WebAppInfo> = mapOf(
+    val CURATED_APPS: List<CuratedWebApp> = listOf(
         // Social & Messaging
-        "com.instagram.android" to WebAppInfo("Instagram", "https://www.instagram.com", asDesktop = false),
-        "com.instagram.lite" to WebAppInfo("Instagram", "https://www.instagram.com", asDesktop = false),
-        "com.discord" to WebAppInfo("Discord", "https://discord.com/login", asDesktop = false),
-        "com.discord.canary" to WebAppInfo("Discord", "https://discord.com/login", asDesktop = false),
-        "com.discord.ptb" to WebAppInfo("Discord", "https://discord.com/login", asDesktop = false),
-        // WhatsApp Web requires desktop user agent to initiate companion pairing
-        "com.whatsapp" to WebAppInfo("WhatsApp Web", "https://web.whatsapp.com", asDesktop = true),
-        "com.whatsapp.w4b" to WebAppInfo("WhatsApp Web", "https://web.whatsapp.com", asDesktop = true),
-        "org.telegram.messenger" to WebAppInfo("Telegram", "https://web.telegram.org/a/", asDesktop = false),
-        "org.telegram.messenger.web" to WebAppInfo("Telegram", "https://web.telegram.org/a/", asDesktop = false),
-        "org.telegram.plus" to WebAppInfo("Telegram", "https://web.telegram.org/a/", asDesktop = false),
-        "com.twitter.android" to WebAppInfo("X", "https://x.com", asDesktop = false),
-        "com.twitter.android.lite" to WebAppInfo("X", "https://x.com", asDesktop = false),
-        "com.reddit.frontpage" to WebAppInfo("Reddit", "https://www.reddit.com", asDesktop = false),
-        "com.instagram.barcelona" to WebAppInfo("Threads", "https://www.threads.net", asDesktop = false),
-        "com.facebook.katana" to WebAppInfo("Facebook", "https://m.facebook.com", asDesktop = false),
-        "com.facebook.lite" to WebAppInfo("Facebook", "https://m.facebook.com", asDesktop = false),
-        "com.facebook.orca" to WebAppInfo("Messenger", "https://www.messenger.com", asDesktop = false),
-        "com.facebook.mlite" to WebAppInfo("Messenger", "https://www.messenger.com", asDesktop = false),
-        "com.linkedin.android" to WebAppInfo("LinkedIn", "https://www.linkedin.com", asDesktop = false),
-        "com.pinterest" to WebAppInfo("Pinterest", "https://www.pinterest.com", asDesktop = false),
-        "com.snapchat.android" to WebAppInfo("Snapchat", "https://web.snapchat.com", asDesktop = false),
-
-        // Media, Video & Audio
-        "com.google.android.youtube" to WebAppInfo("YouTube", "https://m.youtube.com", asDesktop = false),
-        "com.google.android.youtube.tv" to WebAppInfo("YouTube", "https://m.youtube.com", asDesktop = false),
-        "com.google.android.apps.youtube.music" to WebAppInfo("YouTube Music", "https://music.youtube.com", asDesktop = false),
-        "com.spotify.music" to WebAppInfo("Spotify", "https://open.spotify.com", asDesktop = false),
-        "com.spotify.lite" to WebAppInfo("Spotify", "https://open.spotify.com", asDesktop = false),
-        "tv.twitch.android.app" to WebAppInfo("Twitch", "https://m.twitch.tv", asDesktop = false),
-        "com.soundcloud.android" to WebAppInfo("SoundCloud", "https://m.soundcloud.com", asDesktop = false),
-        "com.netflix.mediaclient" to WebAppInfo("Netflix", "https://www.netflix.com", asDesktop = false),
-        "com.jio.media.ondemand" to WebAppInfo("JioCinema", "https://www.jiocinema.com", asDesktop = false),
-        "in.startv.hotstar" to WebAppInfo("Hotstar", "https://www.hotstar.com", asDesktop = false),
+        CuratedWebApp(
+            id = "com.whatsapp",
+            name = "WhatsApp Web",
+            url = "https://web.whatsapp.com",
+            asDesktop = true,
+            alternativePackages = listOf("com.whatsapp.w4b"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.instagram.android",
+            name = "Instagram",
+            url = "https://www.instagram.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.instagram.lite"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "org.telegram.messenger",
+            name = "Telegram",
+            url = "https://web.telegram.org/a/",
+            asDesktop = false,
+            alternativePackages = listOf("org.telegram.messenger.web", "org.telegram.plus"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.twitter.android",
+            name = "X",
+            url = "https://x.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.twitter.android.lite"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.discord",
+            name = "Discord",
+            url = "https://discord.com/login",
+            asDesktop = false,
+            alternativePackages = listOf("com.discord.canary", "com.discord.ptb"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.reddit.frontpage",
+            name = "Reddit",
+            url = "https://www.reddit.com",
+            asDesktop = false,
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.instagram.barcelona",
+            name = "Threads",
+            url = "https://www.threads.net",
+            asDesktop = false,
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.facebook.katana",
+            name = "Facebook",
+            url = "https://m.facebook.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.facebook.lite"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.facebook.orca",
+            name = "Messenger",
+            url = "https://www.messenger.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.facebook.mlite"),
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.linkedin.android",
+            name = "LinkedIn",
+            url = "https://www.linkedin.com",
+            asDesktop = false,
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.pinterest",
+            name = "Pinterest",
+            url = "https://www.pinterest.com",
+            asDesktop = false,
+            category = "Social"
+        ),
+        CuratedWebApp(
+            id = "com.snapchat.android",
+            name = "Snapchat",
+            url = "https://web.snapchat.com",
+            asDesktop = false,
+            category = "Social"
+        ),
 
         // AI & Search
-        "com.openai.chatgpt" to WebAppInfo("ChatGPT", "https://chatgpt.com", asDesktop = false),
-        "com.anthropic.claude" to WebAppInfo("Claude", "https://claude.ai", asDesktop = false),
-        "ai.perplexity.app.android" to WebAppInfo("Perplexity", "https://www.perplexity.ai", asDesktop = false),
-        "com.google.android.googlequicksearchbox" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "com.android.chrome" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "com.chrome.beta" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "com.chrome.dev" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "com.chrome.canary" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "org.chromium.chrome" to WebAppInfo("Google", "https://www.google.com", asDesktop = false),
-        "org.mozilla.firefox" to WebAppInfo("Browser", "https://www.google.com", asDesktop = false),
-        "com.brave.browser" to WebAppInfo("Browser", "https://www.google.com", asDesktop = false),
-        "com.microsoft.emmx" to WebAppInfo("Bing", "https://www.bing.com", asDesktop = false),
-        "com.sec.android.app.sbrowser" to WebAppInfo("Browser", "https://www.google.com", asDesktop = false),
-        "com.opera.browser" to WebAppInfo("Browser", "https://www.google.com", asDesktop = false),
+        CuratedWebApp(
+            id = "com.openai.chatgpt",
+            name = "ChatGPT",
+            url = "https://chatgpt.com",
+            asDesktop = false,
+            category = "AI"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.googlequicksearchbox",
+            name = "Google",
+            url = "https://www.google.com",
+            asDesktop = false,
+            alternativePackages = listOf(
+                "com.android.chrome",
+                "com.chrome.beta",
+                "com.chrome.dev",
+                "com.chrome.canary",
+                "org.chromium.chrome",
+                "org.mozilla.firefox",
+                "com.brave.browser",
+                "com.sec.android.app.sbrowser",
+                "com.opera.browser"
+            ),
+            category = "Search"
+        ),
+        CuratedWebApp(
+            id = "com.anthropic.claude",
+            name = "Claude",
+            url = "https://claude.ai",
+            asDesktop = false,
+            category = "AI"
+        ),
+        CuratedWebApp(
+            id = "ai.perplexity.app.android",
+            name = "Perplexity",
+            url = "https://www.perplexity.ai",
+            asDesktop = false,
+            category = "AI"
+        ),
+        CuratedWebApp(
+            id = "com.microsoft.emmx",
+            name = "Bing",
+            url = "https://www.bing.com",
+            asDesktop = false,
+            category = "Search"
+        ),
+
+        // Media & Entertainment
+        CuratedWebApp(
+            id = "com.google.android.youtube",
+            name = "YouTube",
+            url = "https://m.youtube.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.google.android.youtube.tv"),
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.youtube.music",
+            name = "YouTube Music",
+            url = "https://music.youtube.com",
+            asDesktop = false,
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "com.spotify.music",
+            name = "Spotify",
+            url = "https://open.spotify.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.spotify.lite"),
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "com.netflix.mediaclient",
+            name = "Netflix",
+            url = "https://www.netflix.com",
+            asDesktop = false,
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "tv.twitch.android.app",
+            name = "Twitch",
+            url = "https://m.twitch.tv",
+            asDesktop = false,
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "com.soundcloud.android",
+            name = "SoundCloud",
+            url = "https://m.soundcloud.com",
+            asDesktop = false,
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "com.jio.media.ondemand",
+            name = "JioCinema",
+            url = "https://www.jiocinema.com",
+            asDesktop = false,
+            category = "Media"
+        ),
+        CuratedWebApp(
+            id = "in.startv.hotstar",
+            name = "Hotstar",
+            url = "https://www.hotstar.com",
+            asDesktop = false,
+            category = "Media"
+        ),
 
         // Google Ecosystem & Productivity
-        "com.google.android.apps.maps" to WebAppInfo("Google Maps", "https://maps.google.com", asDesktop = false),
-        "com.google.android.apps.mapslite" to WebAppInfo("Google Maps", "https://maps.google.com", asDesktop = false),
-        "com.google.android.keep" to WebAppInfo("Google Keep", "https://keep.google.com", asDesktop = false),
-        "com.google.android.apps.docs" to WebAppInfo("Google Drive", "https://drive.google.com", asDesktop = false),
-        "com.google.android.apps.docs.editors.docs" to WebAppInfo("Google Docs", "https://docs.google.com", asDesktop = false),
-        "com.google.android.apps.docs.editors.sheets" to WebAppInfo("Google Sheets", "https://sheets.google.com", asDesktop = false),
-        "com.google.android.apps.docs.editors.slides" to WebAppInfo("Google Slides", "https://slides.google.com", asDesktop = false),
-        "com.google.android.apps.photos" to WebAppInfo("Google Photos", "https://photos.google.com", asDesktop = false),
-        "com.google.android.apps.translate" to WebAppInfo("Google Translate", "https://translate.google.com", asDesktop = false),
-        "com.google.android.calendar" to WebAppInfo("Google Calendar", "https://calendar.google.com", asDesktop = false),
-        "com.google.android.gm" to WebAppInfo("Gmail", "https://mail.google.com", asDesktop = false),
-        "com.github.android" to WebAppInfo("GitHub", "https://github.com", asDesktop = false),
-        "notion.id" to WebAppInfo("Notion", "https://www.notion.so", asDesktop = false),
-        "com.canva.editor" to WebAppInfo("Canva", "https://www.canva.com", asDesktop = false),
-        "com.Slack" to WebAppInfo("Slack", "https://app.slack.com", asDesktop = false),
-        "org.wikipedia" to WebAppInfo("Wikipedia", "https://m.wikipedia.org", asDesktop = false),
-        "org.wikipedia.beta" to WebAppInfo("Wikipedia", "https://m.wikipedia.org", asDesktop = false),
-        "com.medium.reader" to WebAppInfo("Medium", "https://medium.com", asDesktop = false),
-        "com.quora.android" to WebAppInfo("Quora", "https://www.quora.com", asDesktop = false),
-        "com.duolingo" to WebAppInfo("Duolingo", "https://www.duolingo.com", asDesktop = false),
+        CuratedWebApp(
+            id = "com.google.android.apps.maps",
+            name = "Google Maps",
+            url = "https://maps.google.com",
+            asDesktop = false,
+            alternativePackages = listOf("com.google.android.apps.mapslite"),
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.gm",
+            name = "Gmail",
+            url = "https://mail.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.keep",
+            name = "Google Keep",
+            url = "https://keep.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.docs",
+            name = "Google Drive",
+            url = "https://drive.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.docs.editors.docs",
+            name = "Google Docs",
+            url = "https://docs.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.docs.editors.sheets",
+            name = "Google Sheets",
+            url = "https://sheets.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.photos",
+            name = "Google Photos",
+            url = "https://photos.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.calendar",
+            name = "Google Calendar",
+            url = "https://calendar.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.google.android.apps.translate",
+            name = "Google Translate",
+            url = "https://translate.google.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.github.android",
+            name = "GitHub",
+            url = "https://github.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "notion.id",
+            name = "Notion",
+            url = "https://www.notion.so",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.canva.editor",
+            name = "Canva",
+            url = "https://www.canva.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "com.Slack",
+            name = "Slack",
+            url = "https://app.slack.com",
+            asDesktop = false,
+            category = "Productivity"
+        ),
+        CuratedWebApp(
+            id = "org.wikipedia",
+            name = "Wikipedia",
+            url = "https://m.wikipedia.org",
+            asDesktop = false,
+            alternativePackages = listOf("org.wikipedia.beta"),
+            category = "Knowledge"
+        ),
+        CuratedWebApp(
+            id = "com.medium.reader",
+            name = "Medium",
+            url = "https://medium.com",
+            asDesktop = false,
+            category = "Knowledge"
+        ),
+        CuratedWebApp(
+            id = "com.quora.android",
+            name = "Quora",
+            url = "https://www.quora.com",
+            asDesktop = false,
+            category = "Knowledge"
+        ),
+        CuratedWebApp(
+            id = "com.duolingo",
+            name = "Duolingo",
+            url = "https://www.duolingo.com",
+            asDesktop = false,
+            category = "Knowledge"
+        ),
 
         // Shopping & Lifestyle
-        "in.amazon.mShop.android.shopping" to WebAppInfo("Amazon", "https://www.amazon.com", asDesktop = false),
-        "com.amazon.mShop.android.shopping" to WebAppInfo("Amazon", "https://www.amazon.com", asDesktop = false),
-        "com.flipkart.android" to WebAppInfo("Flipkart", "https://www.flipkart.com", asDesktop = false),
-        "in.swiggy.android" to WebAppInfo("Swiggy", "https://www.swiggy.com", asDesktop = false),
-        "com.application.zomato" to WebAppInfo("Zomato", "https://www.zomato.com", asDesktop = false),
-        "com.myntra.android" to WebAppInfo("Myntra", "https://www.myntra.com", asDesktop = false),
-        "com.bt.bms" to WebAppInfo("BookMyShow", "https://in.bookmyshow.com", asDesktop = false),
-        "com.cricbuzz.android" to WebAppInfo("Cricbuzz", "https://m.cricbuzz.com", asDesktop = false)
+        CuratedWebApp(
+            id = "com.amazon.mShop.android.shopping",
+            name = "Amazon",
+            url = "https://www.amazon.com",
+            asDesktop = false,
+            alternativePackages = listOf("in.amazon.mShop.android.shopping"),
+            category = "Shopping"
+        ),
+        CuratedWebApp(
+            id = "com.flipkart.android",
+            name = "Flipkart",
+            url = "https://www.flipkart.com",
+            asDesktop = false,
+            category = "Shopping"
+        ),
+        CuratedWebApp(
+            id = "in.swiggy.android",
+            name = "Swiggy",
+            url = "https://www.swiggy.com",
+            asDesktop = false,
+            category = "Lifestyle"
+        ),
+        CuratedWebApp(
+            id = "com.application.zomato",
+            name = "Zomato",
+            url = "https://www.zomato.com",
+            asDesktop = false,
+            category = "Lifestyle"
+        ),
+        CuratedWebApp(
+            id = "com.myntra.android",
+            name = "Myntra",
+            url = "https://www.myntra.com",
+            asDesktop = false,
+            category = "Shopping"
+        ),
+        CuratedWebApp(
+            id = "com.bt.bms",
+            name = "BookMyShow",
+            url = "https://in.bookmyshow.com",
+            asDesktop = false,
+            category = "Lifestyle"
+        ),
+        CuratedWebApp(
+            id = "com.cricbuzz.android",
+            name = "Cricbuzz",
+            url = "https://m.cricbuzz.com",
+            asDesktop = false,
+            category = "Lifestyle"
+        )
     )
+
+    private val CATALOG: Map<String, WebAppInfo> = buildMap {
+        for (app in CURATED_APPS) {
+            val info = WebAppInfo(app.name, app.url, app.asDesktop)
+            put(app.id, info)
+            for (alt in app.alternativePackages) {
+                put(alt, info)
+            }
+        }
+    }
 
     /**
      * Resolves an app's web version:
@@ -109,13 +420,10 @@ object WebAppCatalog {
      * 2. If not found, inspect Android OS App Links / Intent Filters for registered web domains.
      */
     fun resolveWebApp(context: Context, packageName: String): WebAppInfo? {
-        // Tier 1: Static curated catalog
         val catalogItem = CATALOG[packageName]
         if (catalogItem != null) {
             return catalogItem
         }
-
-        // Tier 2: Dynamic Intent-Filter discovery via Android PackageManager
         return discoverDynamicWebDomain(context, packageName)
     }
 
@@ -127,7 +435,7 @@ object WebAppCatalog {
         return discoverDynamicWebDomain(context, packageName) != null
     }
 
-    private fun discoverDynamicWebDomain(context: Context, packageName: String): WebAppInfo? {
+    fun discoverDynamicWebDomain(context: Context, packageName: String): WebAppInfo? {
         return try {
             val pm = context.packageManager
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://")).apply {

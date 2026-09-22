@@ -107,16 +107,12 @@ class SidebarDockView(
                     val itemView = inflater.inflate(R.layout.item_sidebar_app, llAppsContainer, false)
                     val ivIcon = itemView.findViewById<ImageView>(R.id.ivSidebarIcon)
                     val tvName = itemView.findViewById<TextView>(R.id.tvSidebarName)
-
                     tvName.text = app.appName
-                    if (app.icon != null) {
-                        ivIcon.setImageDrawable(app.icon)
-                    } else {
-                        ivIcon.setImageResource(R.mipmap.ic_launcher)
-                    }
+                    val displayIcon = app.icon ?: com.floating.virtualwindow.data.WebIconHelper.getIconForApp(context, app.appName, app.packageName)
+                    ivIcon.setImageDrawable(displayIcon)
 
                     itemView.setOnClickListener {
-                        onAppSelected(app.packageName, app.appName, app.icon)
+                        onAppSelected(app.packageName, app.appName, displayIcon)
                         hide()
                     }
 

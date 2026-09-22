@@ -9,10 +9,10 @@
 
     <!-- Sections -->
     <string name="section_quick_launch">QUICK LAUNCH</string>
-    <string name="section_installed_apps">APPS</string>
-    <string name="search_apps_hint">Search apps...</string>
+    <string name="section_installed_apps">FLOATING WEB APPS</string>
+    <string name="search_apps_hint">Search web apps...</string>
     <string name="selected_apps_count">%1$d pinned to sidebar</string>
-    <string name="no_apps_found">No apps found</string>
+    <string name="no_apps_found">No web apps found</string>
 
     <!-- Navigation Tabs -->
     <string name="tab_workspace">Workspace</string>
@@ -29,11 +29,11 @@
     <string name="permission_granted">Enabled</string>
 
     <!-- Engine Modes -->
-    <string name="engine_mode_title">Virtualization Engine</string>
-    <string name="mode_zero_setup">Zero-Setup Mode</string>
-    <string name="mode_zero_setup_desc">Instant floating web-apps, OEM pop-up views &amp; mini-tools.</string>
-    <string name="mode_advanced">Advanced Virtual Window</string>
-    <string name="mode_advanced_desc">Runs real native installed apps via Wireless Debugging (Shizuku).</string>
+    <string name="engine_mode_title">Window Engine</string>
+    <string name="mode_zero_setup">Pure Web Window</string>
+    <string name="mode_zero_setup_desc">Zero setup • 100% reliable multitasking in Orbis popup window.</string>
+    <string name="mode_advanced">Pure Web Window</string>
+    <string name="mode_advanced_desc">Full controls: Close, Minimize, Rotate &amp; Corner Resizing.</string>
 
     <!-- Wireless Guide -->
     <string name="shizuku_guide_title">Wireless Debugging Setup</string>
