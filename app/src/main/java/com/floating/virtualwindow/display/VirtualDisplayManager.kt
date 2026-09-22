@@ -14,7 +14,7 @@ class VirtualDisplayManager(private val context: Context) {
         private set
 
     val displayId: Int
-        get() = virtualDisplay?.display?.displayId ?: Display.DEFAULT_DISPLAY
+        get() = virtualDisplay?.display?.displayId ?: Display.INVALID_DISPLAY
 
     fun createVirtualDisplay(
         name: String,
@@ -27,19 +27,30 @@ class VirtualDisplayManager(private val context: Context) {
         val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC or
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
 
-        virtualDisplay = displayManager.createVirtualDisplay(
-            name,
-            width,
-            height,
-            densityDpi,
-            surface,
-            flags
-        )
-        return displayId
+        return try {
+            virtualDisplay = displayManager.createVirtualDisplay(
+                name,
+                width,
+                height,
+                densityDpi,
+                surface,
+                flags
+            )
+            displayId
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Display.INVALID_DISPLAY
+        }
     }
 
     fun resize(width: Int, height: Int, densityDpi: Int) {
-        virtualDisplay?.resize(width, height, densityDpi)
+        if (width > 0 && height > 0) {
+            try {
+                virtualDisplay?.resize(width, height, densityDpi)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun release() {

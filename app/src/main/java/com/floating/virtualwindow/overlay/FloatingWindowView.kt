@@ -20,6 +20,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.PreferencesManager
 import com.floating.virtualwindow.display.VirtualDisplayManager
@@ -449,21 +450,35 @@ class FloatingWindowView(
         // Automatically open in landscape if device is landscape OR if it's a landscape app
         applyAspectRatio(isScreenLandscape || isAppLandscape)
 
-        // 1. If Wireless Debugging (Shizuku) is active, ALWAYS launch the real native app in Virtual Display!
+        // 1. If Wireless Debugging (Shizuku) is active, attempt to launch real native app in Virtual Display
         if (GuestLauncher.isShizukuAvailable()) {
-            setupVirtualDisplay(packageName, icon)
+            setupVirtualDisplay(packageName, appName, icon)
             return
         }
 
-        // 2. Wireless Debugging is NOT active -> Check for Web fallback
+        // 2. Wireless Debugging is NOT active -> Automatically fallback to Web app if available
         val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
         if (webFallback != null) {
+            Toast.makeText(context, "Native mode unavailable · Using Web", Toast.LENGTH_SHORT).show()
             openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
             return
         }
 
         // 3. No Web fallback available (offline app, camera, system settings) -> Show Setup Required
         showSetupRequired(packageName, appName)
+    }
+
+    private fun handleNativeLaunchFailure(packageName: String, appName: String, icon: Drawable?) {
+        view.post {
+            cleanContent()
+            val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
+            if (webFallback != null) {
+                Toast.makeText(context, "Native mode unavailable · Using Web", Toast.LENGTH_SHORT).show()
+                openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
+            } else {
+                showSetupRequired(packageName, appName)
+            }
+        }
     }
 
     private fun showSetupRequired(packageName: String, appName: String) {
@@ -490,7 +505,7 @@ class FloatingWindowView(
         contentContainer.addView(setupView)
     }
 
-    private fun setupVirtualDisplay(packageName: String, icon: Drawable? = null) {
+    private fun setupVirtualDisplay(packageName: String, appName: String, icon: Drawable? = null) {
         val surfaceView = SurfaceView(context)
         currentSurfaceView = surfaceView
         contentContainer.addView(surfaceView)
@@ -504,10 +519,19 @@ class FloatingWindowView(
                     320,
                     holder.surface
                 )
+                if (displayId <= 0) {
+                    handleNativeLaunchFailure(packageName, appName, icon)
+                    return
+                }
+
                 touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
 
-                GuestLauncher.launchApp(context, packageName, displayId) { name, url ->
+                val launched = GuestLauncher.launchApp(context, packageName, displayId) { name, url ->
                     openBrowser(url, name, icon = icon, forceRatioCheck = false)
+                }
+
+                if (!launched) {
+                    handleNativeLaunchFailure(packageName, appName, icon)
                 }
             }
 
@@ -522,7 +546,10 @@ class FloatingWindowView(
         })
 
         surfaceView.setOnTouchListener { _, event ->
-            touchForwarder.forwardTouch(event, virtualDisplayManager.displayId)
+            val displayId = virtualDisplayManager.displayId
+            if (displayId > 0) {
+                touchForwarder.forwardTouch(event, displayId)
+            }
             true
         }
     }

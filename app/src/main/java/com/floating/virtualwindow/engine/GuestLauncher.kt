@@ -24,57 +24,68 @@ object GuestLauncher {
         targetDisplayId: Int,
         onWebFallbackRequested: ((String, String) -> Unit)? = null
     ): Boolean {
-        val prefs = PreferencesManager(context)
-
-        // If Shizuku / Wireless Debugging is active, ALWAYS launch the real native app!
-        if (isShizukuAvailable()) {
+        // If Shizuku / Wireless Debugging is active and we have a valid virtual display, attempt real native launch
+        if (targetDisplayId > 0 && isShizukuAvailable()) {
             val launched = launchViaShizuku(context, packageName, targetDisplayId)
             if (launched) return true
         }
 
-        // Otherwise, check if app has a web fallback
+        // Native launch unavailable or failed -> check if app has a web fallback
         val webInfo = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
         if (webInfo != null) {
             onWebFallbackRequested?.invoke(webInfo.title, webInfo.url)
             return true
         }
 
-        // 2. Try launching in Freeform / Pop-up view mode
+        // Secondary fallback: Freeform / Pop-up view mode if supported
         val launchedFreeform = FreeformLauncher.launchAppInFreeform(context, packageName)
         if (launchedFreeform) return true
 
-        // 3. Fallback: Launch in-process stub on the virtual display
-        return try {
-            val options = ActivityOptions.makeBasic().apply {
-                launchDisplayId = targetDisplayId
-            }
-            val stubIntent = Intent(context, GuestStubActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                putExtra("EXTRA_TARGET_PACKAGE", packageName)
-            }
-            context.startActivity(stubIntent, options.toBundle())
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
+        // Do not substitute with a fake GuestStubActivity; return false so the caller
+        // can gracefully route to Web or guide the user
+        return false
     }
 
     private fun launchViaShizuku(context: Context, packageName: String, displayId: Int): Boolean {
+        if (displayId <= 0) return false
         return try {
-            val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            val pm = context.packageManager
+            val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
+            val component = launchIntent.component ?: return false
+            val componentName = component.flattenToString()
 
-            // Using Shizuku to start activity on target display
-            val cmd = "am start -d ${displayId} -n ${launchIntent.component?.flattenToString()}"
+            // Correct Android am syntax: --display <id>
+            val cmd = "am start --display $displayId -n $componentName"
             val method = Shizuku::class.java.getDeclaredMethod(
                 "newProcess",
                 Array<String>::class.java,
                 Array<String>::class.java,
                 String::class.java
             ).apply { isAccessible = true }
+
             val process = method.invoke(null, arrayOf("sh", "-c", cmd), null, null) as? Process
-            process?.waitFor()
+                ?: return false
+
+            val completed = process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)
+            if (!completed) {
+                process.destroy()
+                return false
+            }
+
+            val stdout = process.inputStream.bufferedReader().use { it.readText() }
+            val stderr = process.errorStream.bufferedReader().use { it.readText() }
+            val exitCode = process.exitValue()
+
+            if (exitCode != 0) {
+                return false
+            }
+
+            // Verify stdout/stderr for known failure tokens
+            if (stdout.contains("Error:") || stdout.contains("Exception") ||
+                stderr.contains("Error:") || stderr.contains("Exception") || stderr.contains("Permission Denial")) {
+                return false
+            }
+
             true
         } catch (e: Exception) {
             e.printStackTrace()
