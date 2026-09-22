@@ -3,6 +3,7 @@ package com.floating.virtualwindow.overlay
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -437,9 +438,16 @@ class FloatingWindowView(
 
         cleanContent()
 
-        // Auto-detect if this is a landscape game (Free Fire, BGMI, COD) or standard portrait app
-        val isGameOrLandscape = com.floating.virtualwindow.data.WebAppCatalog.isLandscapeApp(context, packageName)
-        applyAspectRatio(isGameOrLandscape)
+        // Auto-detect environment:
+        // 1. Is the current screen/device in landscape mode (e.g. game running or phone rotated horizontally)?
+        // 2. Or is the target app specifically a landscape game (Free Fire, BGMI, COD, etc.)?
+        val displayMetrics = context.resources.displayMetrics
+        val isScreenLandscape = displayMetrics.widthPixels > displayMetrics.heightPixels ||
+                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val isAppLandscape = com.floating.virtualwindow.data.WebAppCatalog.isLandscapeApp(context, packageName)
+
+        // Automatically open in landscape if device is landscape OR if it's a landscape app
+        applyAspectRatio(isScreenLandscape || isAppLandscape)
 
         // 1. If Wireless Debugging (Shizuku) is active, ALWAYS launch the real native app in Virtual Display!
         if (GuestLauncher.isShizukuAvailable()) {
@@ -450,7 +458,7 @@ class FloatingWindowView(
         // 2. Wireless Debugging is NOT active -> Check for Web fallback
         val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
         if (webFallback != null) {
-            openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop)
+            openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
             return
         }
 
@@ -499,7 +507,7 @@ class FloatingWindowView(
                 touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
 
                 GuestLauncher.launchApp(context, packageName, displayId) { name, url ->
-                    openBrowser(url, name, icon = icon)
+                    openBrowser(url, name, icon = icon, forceRatioCheck = false)
                 }
             }
 
@@ -523,7 +531,8 @@ class FloatingWindowView(
         url: String,
         title: String = "Browser",
         icon: Drawable? = null,
-        asDesktop: Boolean = false
+        asDesktop: Boolean = false,
+        forceRatioCheck: Boolean = true
     ) {
         tvHeaderTitle.text = title
         if (icon != null) {
@@ -532,6 +541,13 @@ class FloatingWindowView(
             ivHeaderIcon.setImageResource(R.drawable.ic_browser)
         }
         cleanContent()
+
+        if (forceRatioCheck) {
+            val displayMetrics = context.resources.displayMetrics
+            val isScreenLandscape = displayMetrics.widthPixels > displayMetrics.heightPixels ||
+                    context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            applyAspectRatio(isScreenLandscape)
+        }
 
         val browserView = FloatingBrowserView(context)
         currentBrowserView = browserView
@@ -546,6 +562,11 @@ class FloatingWindowView(
         tvHeaderTitle.text = "Calculator"
         ivHeaderIcon.setImageResource(R.drawable.ic_calculator)
         cleanContent()
+
+        val displayMetrics = context.resources.displayMetrics
+        val isScreenLandscape = displayMetrics.widthPixels > displayMetrics.heightPixels ||
+                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        applyAspectRatio(isScreenLandscape)
 
         val calcView = FloatingCalculatorView(context)
         currentCalculatorView = calcView
