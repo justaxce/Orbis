@@ -1,0 +1,36 @@
+<resources>
+    <!-- Primary Brand Colors: Obsidian & Champagne Gold -->
+    <color name="primary">#DFC07A</color>
+    <color name="primary_light">#EED596</color>
+    <color name="primary_dark">#C4A45A</color>
+    <color name="accent">#DFC07A</color>
+
+    <color name="success">#34D399</color>
+    <color name="warning">#FBBF24</color>
+    <color name="error">#F87171</color>
+
+    <!-- Dark Theme Obsidian Surfaces -->
+    <color name="background">#090B0E</color>
+    <color name="surface">#12161F</color>
+    <color name="surface_elevated">#181E2A</color>
+    <color name="surface_variant">#1A202C</color>
+    <color name="border">#1E2533</color>
+    <color name="border_subtle">#161B26</color>
+
+    <!-- Typography -->
+    <color name="text_primary">#F1F5F9</color>
+    <color name="text_secondary">#8B95A5</color>
+    <color name="text_muted">#525C6E</color>
+
+    <!-- Floating Window & Overlay (Tinted Glass) -->
+    <color name="window_overlay">#E610141C</color>
+    <color name="window_header">#181E2A</color>
+    <color name="window_border">#252E3E</color>
+    <color name="dock_background">#EE10141C</color>
+    <color name="handle_tint">#B30E121A</color>
+    <color name="handle_border">#33DFC07A</color>
+
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

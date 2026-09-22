@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/handleRoot"
+    android:layout_width="36dp"
+    android:layout_height="56dp"
+    android:background="@drawable/bg_handle"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/ivHandleIcon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_handle_ring"
+        android:contentDescription="Orbis Edge Handle" />
+</FrameLayout>
