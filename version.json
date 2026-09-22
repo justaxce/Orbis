@@ -1,10 +1,10 @@
 {
-  "versionCode": 14,
-  "versionName": "1.2.0",
+  "versionCode": 15,
+  "versionName": "1.2.1",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.0/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.1/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Official Developer Release Signature (Ace / InfernoDev)\n• Major Security Upgrade: Permanent developer cryptographic identity\n• Official brand app icon, adaptive icon, and loading splash screen\n• NOTE: Users upgrading from v1.0.x-v1.1.x must uninstall previous version once due to developer signature upgrade",
+  "releaseNotes": "• Added 1-tap Desktop Site toggle button in browser URL bar\n• Enabled pinch-to-zoom & horizontal scrolling for WhatsApp Web, desktop pages, and wide code blocks\n• Added Outside Tap Auto-Minimize toggle in Settings (automatically collapses window into bubble when tapping outside)",
   "forceUpdate": false
 }
