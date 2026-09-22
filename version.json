@@ -1,10 +1,10 @@
 {
-  "versionCode": 16,
-  "versionName": "1.2.2",
+  "versionCode": 17,
+  "versionName": "1.2.3",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.2/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.3/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Fixed orientation-aware restore from floating bubble (auto-adapts ratio when rotated between landscape and portrait)\n• Hard-clamped window dimensions to prevent off-screen expansion and missing header buttons\n• Centered window placement on orientation flip",
+  "releaseNotes": "• Fixed Shizuku IPC binder connection and Virtual Display creation\n• Enabled native app launching without 'Setup Required' error\n• Added real-time Shizuku auto-reconnect and instant permission request",
   "forceUpdate": false
 }
