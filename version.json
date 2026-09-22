@@ -1,10 +1,12 @@
 {
-  "versionCode": 1,
-  "versionName": "1.0.0",
+  "versionCode": 2,
+  "versionName": "1.0.1",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.0/Orbis.apk",
-  "apkSize": "1.9 MB",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.1/Orbis.apk",
+  "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Multilevel Advanced Scientific Calculator with BODMAS, fx functions & history\n• Magnetic 2D drag-to-edge handle with instant left/right snapping\n• Wireless Debugging Setup Guard preventing blank screens\n• In-app self-updating engine (OTA updates)\n• Restored soft keyboard support in background apps\n• Non-destructive minimize to bubble",
+  "releaseNotes": "• Fixed sidebar auto-restore when updating app or rebooting
+• Fixed setup guide dialog crash/glitch from floating window
+• Fixed keyboard not opening automatically on 1-tap in input fields",
   "forceUpdate": false
 }
