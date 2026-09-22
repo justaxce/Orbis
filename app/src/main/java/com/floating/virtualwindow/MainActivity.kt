@@ -74,6 +74,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvPinnedCount: TextView
 
     // Settings Views
+    private lateinit var switchAutoMinimize: MaterialSwitch
     private lateinit var rgDockSide: RadioGroup
     private lateinit var rgEngineMode: RadioGroup
     private lateinit var btnShizukuGuide: Button
@@ -119,6 +120,7 @@ class MainActivity : AppCompatActivity() {
         }
         updateServiceState()
         syncDockSideSettings()
+        switchAutoMinimize.isChecked = preferencesManager.autoMinimizeOnOutsideTap
     }
 
     private fun initViews() {
@@ -145,6 +147,9 @@ class MainActivity : AppCompatActivity() {
         etSearchApps = findViewById(R.id.etSearchApps)
         rvAppsList = findViewById(R.id.rvAppsList)
         tvPinnedCount = findViewById(R.id.tvPinnedCount)
+
+        switchAutoMinimize = findViewById(R.id.switchAutoMinimize)
+        switchAutoMinimize.isChecked = preferencesManager.autoMinimizeOnOutsideTap
 
         rgDockSide = findViewById(R.id.rgDockSide)
         rgEngineMode = findViewById(R.id.rgEngineMode)
@@ -232,6 +237,10 @@ class MainActivity : AppCompatActivity() {
 
         btnQuickGrant.setOnClickListener {
             requestOverlayPermission()
+        }
+
+        switchAutoMinimize.setOnCheckedChangeListener { _, isChecked ->
+            preferencesManager.autoMinimizeOnOutsideTap = isChecked
         }
 
         // Fix: Update dock side dynamically without stopping/restarting the service!

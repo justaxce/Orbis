@@ -121,7 +121,8 @@ class FloatingWindowView(
             safeInitialHeight,
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -133,6 +134,22 @@ class FloatingWindowView(
         setupDragHandle()
         setupResizeHandle()
         setupControls()
+        setupOutsideTouchListener()
+    }
+
+    private fun setupOutsideTouchListener() {
+        view.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_OUTSIDE) {
+                if (preferencesManager.autoMinimizeOnOutsideTap) {
+                    onMinimizeRequested()
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
     }
 
     private fun setupDragHandle() {
@@ -343,6 +360,7 @@ class FloatingWindowView(
         } else {
             layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         }
+        layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         updateLayout()
     }
 

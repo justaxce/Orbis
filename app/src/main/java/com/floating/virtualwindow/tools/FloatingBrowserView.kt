@@ -44,8 +44,10 @@ class FloatingBrowserView @JvmOverloads constructor(
     private val btnBack: ImageButton
     private val btnClearUrl: ImageButton
     private val btnRefresh: ImageButton
+    private val btnToggleDesktopMode: ImageButton
     private val flOAuthPopupContainer: FrameLayout
     private var popupWebView: WebView? = null
+    private var isDesktopMode: Boolean = false
 
     // Text Selection Toolbar
     private val llSelectionToolbar: LinearLayout
@@ -66,6 +68,7 @@ class FloatingBrowserView @JvmOverloads constructor(
         btnBack = view.findViewById(R.id.btnBrowserBack)
         btnClearUrl = view.findViewById(R.id.btnClearUrl)
         btnRefresh = view.findViewById(R.id.btnBrowserRefresh)
+        btnToggleDesktopMode = view.findViewById(R.id.btnToggleDesktopMode)
         flOAuthPopupContainer = view.findViewById(R.id.flOAuthPopupContainer)
 
         llSelectionToolbar = view.findViewById(R.id.llSelectionToolbar)
@@ -74,6 +77,7 @@ class FloatingBrowserView @JvmOverloads constructor(
         btnSearchSelection = view.findViewById(R.id.btnSearchSelection)
         btnClearSelection = view.findViewById(R.id.btnClearSelection)
 
+        updateDesktopButtonUi()
         setupWebView()
         setupListeners()
     }
@@ -85,6 +89,7 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.databaseEnabled = true
         settings.loadWithOverviewMode = true
         settings.useWideViewPort = true
+        settings.setSupportZoom(true)
         settings.builtInZoomControls = true
         settings.displayZoomControls = false
         settings.mediaPlaybackRequiresUserGesture = false
@@ -93,6 +98,12 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.javaScriptCanOpenWindowsAutomatically = true
         settings.allowFileAccess = true
         settings.allowContentAccess = true
+
+        // Enable horizontal & vertical scrollbars for desktop sites and preformatted code
+        webView.isHorizontalScrollBarEnabled = true
+        webView.isVerticalScrollBarEnabled = true
+        webView.isScrollbarFadingEnabled = true
+        webView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
 
         // Enable Cookies (including 3rd-party cookies for login sessions across all services)
         try {
@@ -119,6 +130,7 @@ class FloatingBrowserView @JvmOverloads constructor(
             override fun onPageFinished(view: WebView?, url: String?) {
                 pbLoading.visibility = View.GONE
                 injectSelectionListener()
+                injectHorizontalScrollAndCodeFix()
                 try {
                     CookieManager.getInstance().flush()
                 } catch (e: Exception) {
@@ -221,6 +233,10 @@ class FloatingBrowserView @JvmOverloads constructor(
             webView.reload()
         }
 
+        btnToggleDesktopMode.setOnClickListener {
+            toggleDesktopMode()
+        }
+
         btnClearUrl.setOnClickListener {
             if (etUrl.text.isNotEmpty()) {
                 etUrl.setText("")
@@ -300,13 +316,60 @@ class FloatingBrowserView @JvmOverloads constructor(
     }
 
     fun loadUrl(url: String, asDesktop: Boolean = false) {
-        if (asDesktop) {
-            webView.settings.userAgentString = DESKTOP_USER_AGENT
-        } else {
-            // Authentic Android Mobile User Agent ensures websites render in full mobile touch mode
-            webView.settings.userAgentString = ANDROID_MOBILE_USER_AGENT
-        }
+        isDesktopMode = asDesktop
+        applyUserAgent()
+        updateDesktopButtonUi()
         webView.loadUrl(url)
+    }
+
+    private fun toggleDesktopMode() {
+        isDesktopMode = !isDesktopMode
+        applyUserAgent()
+        updateDesktopButtonUi()
+        val msg = if (isDesktopMode) "Desktop site requested" else "Mobile site requested"
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        webView.reload()
+    }
+
+    private fun applyUserAgent() {
+        webView.settings.userAgentString = if (isDesktopMode) DESKTOP_USER_AGENT else ANDROID_MOBILE_USER_AGENT
+    }
+
+    private fun updateDesktopButtonUi() {
+        if (isDesktopMode) {
+            btnToggleDesktopMode.setColorFilter(context.getColor(R.color.accent))
+        } else {
+            btnToggleDesktopMode.setColorFilter(context.getColor(R.color.text_secondary))
+        }
+    }
+
+    private fun injectHorizontalScrollAndCodeFix() {
+        val js = """
+            (function() {
+                try {
+                    var metas = document.querySelectorAll('meta[name="viewport"]');
+                    metas.forEach(function(m) {
+                        var content = m.getAttribute('content') || '';
+                        if (content.indexOf('user-scalable=no') !== -1 || content.indexOf('user-scalable=0') !== -1) {
+                            m.setAttribute('content', content.replace(/user-scalable=\s*(no|0)/gi, 'user-scalable=yes').replace(/maximum-scale=\s*1(\.0)?/gi, 'maximum-scale=5.0'));
+                        }
+                    });
+                    var css = 'html, body { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; } ' +
+                              'pre, code, table, .highlight, [class*="code"], [class*="table"], .blob-wrapper, .react-code-text { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; max-width: 100vw !important; } ' +
+                              '#app, #app > div, ._aigv, ._aigs, .landing-wrapper { overflow-x: auto !important; min-width: 720px !important; width: auto !important; -webkit-overflow-scrolling: touch !important; }';
+                    var head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+                    var style = document.getElementById('__orbis_scroll_style');
+                    if (!style) {
+                        style = document.createElement('style');
+                        style.id = '__orbis_scroll_style';
+                        style.type = 'text/css';
+                        style.appendChild(document.createTextNode(css));
+                        head.appendChild(style);
+                    }
+                } catch(e) {}
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
     }
 
     companion object {
