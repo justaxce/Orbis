@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Bottom-Right Crop Angle / Grip Lines -->
+    <path
+        android:strokeColor="#DFC07A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M14,20 L20,20 L20,14" />
+    <path
+        android:strokeColor="#8EDFC07A"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M20,8 L8,20" />
+</vector>

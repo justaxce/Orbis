@@ -51,7 +51,9 @@ class FloatingWindowView(
     private val btnMaximize: ImageButton = view.findViewById(R.id.btnMaximize)
     private val btnClose: ImageButton = view.findViewById(R.id.btnClose)
     private val contentContainer: FrameLayout = view.findViewById(R.id.windowContentContainer)
-    private val ivResizeHandle: ImageView = view.findViewById(R.id.ivResizeHandle)
+    private val flResizeBR: FrameLayout = view.findViewById(R.id.flResizeBR)
+    private val flResizeBL: FrameLayout = view.findViewById(R.id.flResizeBL)
+    private val tvResizeBadge: TextView = view.findViewById(R.id.tvResizeBadge)
 
     private val virtualDisplayManager = VirtualDisplayManager(context)
     private val touchForwarder = TouchForwarder(750, 1100, 750, 1100)
@@ -87,16 +89,18 @@ class FloatingWindowView(
         }
 
         val displayMetrics = context.resources.displayMetrics
-        val safeInitialWidth = min(preferencesManager.windowWidth, (displayMetrics.widthPixels * 0.90).toInt())
-        val safeInitialHeight = min(preferencesManager.windowHeight, (displayMetrics.heightPixels * 0.80).toInt())
-        val safeInitialX = (displayMetrics.widthPixels * 0.05).toInt()
+        val preferredWidth = preferencesManager.windowWidth.coerceAtLeast(320)
+        val safeInitialWidth = min(preferredWidth, (displayMetrics.widthPixels * 0.90).toInt())
+        val safeInitialHeight = (safeInitialWidth / ASPECT_RATIO_9_16).toInt().coerceAtMost((displayMetrics.heightPixels * 0.82).toInt())
+        val finalInitialWidth = (safeInitialHeight * ASPECT_RATIO_9_16).toInt()
+        val safeInitialX = (displayMetrics.widthPixels - finalInitialWidth) / 2
         val safeInitialY = (displayMetrics.heightPixels * 0.08).toInt()
 
         // Important: Use FLAG_NOT_FOCUSABLE by default so underlying apps (WhatsApp, Instagram, etc.)
         // retain 100% input and soft keyboard (IME) capability without interference.
         // Omit FLAG_LAYOUT_NO_LIMITS so window bounds are properly constrained to the screen.
         layoutParams = WindowManager.LayoutParams(
-            safeInitialWidth,
+            finalInitialWidth,
             safeInitialHeight,
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -140,24 +144,36 @@ class FloatingWindowView(
     }
 
     private fun setupResizeHandle() {
-        ivResizeHandle.setOnTouchListener { _, event ->
+        // Bottom-Right Corner Crop Handle (40dp hitbox)
+        flResizeBR.setOnTouchListener { _, event ->
             val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialWidth = layoutParams.width
                     initialHeight = layoutParams.height
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+
+                    showResizeBadge(initialWidth, initialHeight)
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val minW = (displayMetrics.widthPixels * 0.40).toInt().coerceAtLeast(320)
-                    val minH = (displayMetrics.heightPixels * 0.30).toInt().coerceAtLeast(420)
-                    val maxW = (displayMetrics.widthPixels - layoutParams.x).coerceAtLeast(minW)
-                    val maxH = (displayMetrics.heightPixels - layoutParams.y).coerceAtLeast(minH)
+                    val dx = event.rawX - initialTouchX
+                    val dy = event.rawY - initialTouchY
 
-                    val newWidth = (initialWidth + (event.rawX - initialTouchX).toInt()).coerceIn(minW, maxW)
-                    val newHeight = (initialHeight + (event.rawY - initialTouchY).toInt()).coerceIn(minH, maxH)
+                    // Proportional 9:16 diagonal drag vector
+                    val deltaW = (dx + dy * ASPECT_RATIO_9_16) / 2.0f
+
+                    val minW = (screenWidth * 0.35).toInt().coerceAtLeast(260)
+                    val maxW = min((screenWidth * 0.94).toInt(), screenWidth - layoutParams.x)
+                    val maxH = min((screenHeight * 0.88).toInt(), screenHeight - layoutParams.y)
+                    val clampedMaxW = min(maxW, (maxH * ASPECT_RATIO_9_16).toInt())
+
+                    val newWidth = (initialWidth + deltaW.toInt()).coerceIn(minW, clampedMaxW)
+                    val newHeight = (newWidth / ASPECT_RATIO_9_16).toInt()
 
                     layoutParams.width = newWidth
                     layoutParams.height = newHeight
@@ -167,11 +183,94 @@ class FloatingWindowView(
                     virtualDisplayManager.resize(newWidth, newHeight, 320)
                     touchForwarder.updateDimensions(newWidth, newHeight, newWidth, newHeight)
                     updateLayout()
+
+                    updateResizeBadge(newWidth, newHeight)
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    hideResizeBadge()
                     true
                 }
                 else -> false
             }
         }
+
+        // Bottom-Left Corner Crop Handle (40dp hitbox)
+        flResizeBL.setOnTouchListener { _, event ->
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = layoutParams.x
+                    initialWidth = layoutParams.width
+                    initialHeight = layoutParams.height
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+
+                    showResizeBadge(initialWidth, initialHeight)
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - initialTouchX
+                    val dy = event.rawY - initialTouchY
+
+                    // Dragging left (-dx) expands the window
+                    val deltaW = (-dx + dy * ASPECT_RATIO_9_16) / 2.0f
+
+                    val minW = (screenWidth * 0.35).toInt().coerceAtLeast(260)
+                    val maxRight = initialX + initialWidth
+                    val maxW = min((screenWidth * 0.94).toInt(), maxRight)
+                    val maxH = min((screenHeight * 0.88).toInt(), screenHeight - layoutParams.y)
+                    val clampedMaxW = min(maxW, (maxH * ASPECT_RATIO_9_16).toInt())
+
+                    val targetW = (initialWidth + deltaW.toInt()).coerceIn(minW, clampedMaxW)
+                    val newX = (maxRight - targetW).coerceIn(0, maxRight - minW)
+                    val actualWidth = maxRight - newX
+                    val newHeight = (actualWidth / ASPECT_RATIO_9_16).toInt()
+
+                    layoutParams.x = newX
+                    layoutParams.width = actualWidth
+                    layoutParams.height = newHeight
+                    preferencesManager.windowWidth = actualWidth
+                    preferencesManager.windowHeight = newHeight
+
+                    virtualDisplayManager.resize(actualWidth, newHeight, 320)
+                    touchForwarder.updateDimensions(actualWidth, newHeight, actualWidth, newHeight)
+                    updateLayout()
+
+                    updateResizeBadge(actualWidth, newHeight)
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    hideResizeBadge()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showResizeBadge(width: Int, height: Int) {
+        tvResizeBadge.text = "📐 9:16 • ${width} × ${height}"
+        tvResizeBadge.alpha = 0f
+        tvResizeBadge.visibility = View.VISIBLE
+        tvResizeBadge.animate().alpha(1f).setDuration(120).start()
+    }
+
+    private fun updateResizeBadge(width: Int, height: Int) {
+        tvResizeBadge.text = "📐 9:16 • ${width} × ${height}"
+    }
+
+    private fun hideResizeBadge() {
+        tvResizeBadge.animate()
+            .alpha(0f)
+            .setDuration(250)
+            .withEndAction {
+                tvResizeBadge.visibility = View.GONE
+            }
+            .start()
     }
 
     private fun setupControls() {
@@ -219,17 +318,20 @@ class FloatingWindowView(
             savedX = layoutParams.x
             savedY = layoutParams.y
 
-            layoutParams.width = (displayMetrics.widthPixels * 0.94).toInt()
-            layoutParams.height = (displayMetrics.heightPixels * 0.85).toInt()
-            layoutParams.x = (displayMetrics.widthPixels * 0.03).toInt()
+            val maxH = (displayMetrics.heightPixels * 0.85).toInt()
+            val maxW = min((displayMetrics.widthPixels * 0.94).toInt(), (maxH * ASPECT_RATIO_9_16).toInt())
+
+            layoutParams.width = maxW
+            layoutParams.height = (maxW / ASPECT_RATIO_9_16).toInt()
+            layoutParams.x = (displayMetrics.widthPixels - maxW) / 2
             layoutParams.y = (displayMetrics.heightPixels * 0.06).toInt()
             isMaximized = true
         } else {
             val maxX = max(0, displayMetrics.widthPixels - savedWidth)
             val maxY = max(0, displayMetrics.heightPixels - savedHeight)
 
-            layoutParams.width = savedWidth.coerceIn(320, displayMetrics.widthPixels)
-            layoutParams.height = savedHeight.coerceIn(420, displayMetrics.heightPixels)
+            layoutParams.width = savedWidth.coerceIn(260, displayMetrics.widthPixels)
+            layoutParams.height = savedHeight.coerceIn(460, displayMetrics.heightPixels)
             layoutParams.x = savedX.coerceIn(0, maxX)
             layoutParams.y = savedY.coerceIn(0, maxY)
             isMaximized = false
@@ -431,5 +533,9 @@ class FloatingWindowView(
 
     fun hide() {
         close()
+    }
+
+    companion object {
+        const val ASPECT_RATIO_9_16 = 9.0f / 16.0f
     }
 }

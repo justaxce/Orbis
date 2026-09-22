@@ -90,13 +90,51 @@
             android:background="@color/black" />
     </LinearLayout>
 
-    <!-- Bottom-Right Minimal Resize Handle -->
-    <ImageView
-        android:id="@+id/ivResizeHandle"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
+    <!-- Live 9:16 Dimensions Badge Overlay -->
+    <TextView
+        android:id="@+id/tvResizeBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_status_badge"
+        android:backgroundTint="#E612161F"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="7dp"
+        android:textColor="@color/accent"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:elevation="12dp"
+        android:visibility="gone" />
+
+    <!-- Bottom-Left Crop Corner Handle (40dp Touch Hitbox) -->
+    <FrameLayout
+        android:id="@+id/flResizeBL"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="bottom|start"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/ivResizeBL"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_resize_corner_bl"
+            android:contentDescription="Crop Resize Bottom Left" />
+    </FrameLayout>
+
+    <!-- Bottom-Right Crop Corner Handle (40dp Touch Hitbox) -->
+    <FrameLayout
+        android:id="@+id/flResizeBR"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="bottom|end"
-        android:layout_margin="2dp"
-        android:src="@drawable/ic_resize"
-        android:contentDescription="Resize Handle" />
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/ivResizeBR"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_resize_corner_br"
+            android:contentDescription="Crop Resize Bottom Right" />
+    </FrameLayout>
 </FrameLayout>
