@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import androidx.appcompat.app.AppCompatActivity
@@ -76,11 +77,17 @@ class WebBridgeActivity : AppCompatActivity() {
         val allowMultiple = intent.getBooleanExtra(EXTRA_ALLOW_MULTIPLE, false)
         val isCaptureEnabled = intent.getBooleanExtra(EXTRA_CAPTURE_ENABLED, false)
 
-        val isImageAcceptable = acceptTypes.isEmpty() || acceptTypes.any {
+        val cleanTypes = acceptTypes.filter { it.isNotBlank() }
+        val isOnlyImage = cleanTypes.isNotEmpty() && cleanTypes.all { it.startsWith("image/", ignoreCase = true) }
+        val isOnlyVideo = cleanTypes.isNotEmpty() && cleanTypes.all { it.startsWith("video/", ignoreCase = true) }
+        val isMedia = isOnlyImage || isOnlyVideo || (cleanTypes.isNotEmpty() && cleanTypes.all {
+            it.startsWith("image/", ignoreCase = true) || it.startsWith("video/", ignoreCase = true)
+        })
+        val isImageAcceptable = cleanTypes.isEmpty() || isMedia || cleanTypes.any {
             it.contains("image", ignoreCase = true) || it == "*/*"
         }
 
-        // Prepare camera photo intent if images are acceptable
+        // 1. Prepare camera capture intent if images or videos are acceptable
         var cameraIntent: Intent? = null
         if (isImageAcceptable) {
             try {
@@ -99,35 +106,105 @@ class WebBridgeActivity : AppCompatActivity() {
             }
         }
 
-        // Prepare document / file picker intent
-        val pickIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            val filteredTypes = acceptTypes.filter { it.isNotBlank() }
-            if (filteredTypes.size == 1 && filteredTypes[0] != "*/*") {
-                type = filteredTypes[0]
-            } else if (filteredTypes.size > 1) {
-                type = "*/*"
-                putExtra(Intent.EXTRA_MIME_TYPES, filteredTypes.toTypedArray())
-            } else {
-                type = "*/*"
-            }
-            if (allowMultiple) {
-                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        // If capture attribute is strictly requested by website (e.g. <input capture="camera">), launch camera directly
+        if (isCaptureEnabled && cameraIntent != null) {
+            try {
+                startActivityForResult(cameraIntent, REQ_FILE_PICKER)
+                return
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
-        try {
-            if (isCaptureEnabled && cameraIntent != null && cameraIntent.resolveActivity(packageManager) != null) {
-                // If capture attribute is strictly requested, launch camera directly
-                startActivityForResult(cameraIntent, REQ_FILE_PICKER)
-            } else {
-                val chooserIntent = Intent.createChooser(pickIntent, "Attach File or Take Photo").apply {
-                    if (cameraIntent != null && cameraIntent.resolveActivity(packageManager) != null) {
-                        putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+        // 2. Prepare Chooser and Intent List
+        val initialIntents = mutableListOf<Intent>()
+        if (cameraIntent != null) {
+            initialIntents.add(cameraIntent)
+        }
+
+        val primaryIntent: Intent
+        val chooserTitle: String
+
+        if (isMedia) {
+            chooserTitle = if (isOnlyVideo) "Select Video or Record" else "Select Photos or Camera"
+
+            // On Android 13+ (API 33+), check for modern Photo Picker
+            var photoPicker: Intent? = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                try {
+                    val pIntent = Intent(MediaStore.ACTION_PICK_IMAGES).apply {
+                        if (isOnlyVideo) type = "video/*"
+                        else if (isOnlyImage) type = "image/*"
+                        if (allowMultiple) {
+                            putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit())
+                        }
                     }
+                    if (pIntent.resolveActivity(packageManager) != null) {
+                        photoPicker = pIntent
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                startActivityForResult(chooserIntent, REQ_FILE_PICKER)
             }
+
+            // Fallback / standard Gallery picker (Google Photos, Samsung Gallery, Device Gallery)
+            val mediaUri = if (isOnlyVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            val galleryIntent = Intent(Intent.ACTION_PICK, mediaUri).apply {
+                type = if (isOnlyVideo) "video/*" else "image/*"
+                if (allowMultiple) {
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+            }
+
+            // Also provide file browser option in chooser in case user explicitly wants raw files
+            val filesIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = if (isOnlyVideo) "video/*" else "image/*"
+                if (cleanTypes.size > 1) {
+                    putExtra(Intent.EXTRA_MIME_TYPES, cleanTypes.toTypedArray())
+                }
+                if (allowMultiple) {
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+            }
+            initialIntents.add(filesIntent)
+
+            primaryIntent = photoPicker ?: galleryIntent
+        } else {
+            chooserTitle = "Attach File or Take Photo"
+
+            // Generic documents or mixed files
+            val getFilesIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                if (cleanTypes.size == 1 && cleanTypes[0] != "*/*") {
+                    type = cleanTypes[0]
+                } else if (cleanTypes.size > 1) {
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, cleanTypes.toTypedArray())
+                } else {
+                    type = "*/*"
+                }
+                if (allowMultiple) {
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+            }
+
+            // If images could be acceptable, add Gallery as an option in chooser too
+            if (isImageAcceptable) {
+                val galleryOpt = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
+                    type = "image/*"
+                }
+                initialIntents.add(galleryOpt)
+            }
+
+            primaryIntent = getFilesIntent
+        }
+
+        try {
+            val chooserIntent = Intent.createChooser(primaryIntent, chooserTitle).apply {
+                if (initialIntents.isNotEmpty()) {
+                    putExtra(Intent.EXTRA_INITIAL_INTENTS, initialIntents.toTypedArray())
+                }
+            }
+            startActivityForResult(chooserIntent, REQ_FILE_PICKER)
         } catch (e: Exception) {
             e.printStackTrace()
             isResultHandled = true
