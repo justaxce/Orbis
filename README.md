@@ -7,7 +7,7 @@
   <a href="https://github.com/justaxce/Orbis/releases/latest"><img src="https://img.shields.io/badge/APK%20Size-2.2%20MB-emerald" alt="APK Size" /></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-blue" alt="Android" />
   <img src="https://img.shields.io/badge/Developer-Ace%20%2F%20InfernoDev-DFC07A" alt="Developer" />
-  <img src="https://img.shields.io/badge/Security-Play%20Protect%20Verified-brightgreen" alt="Security" />
+  <a href="PRIVACY.md"><img src="https://img.shields.io/badge/Privacy-100%25%20Zero%20Data-brightgreen" alt="Privacy Policy" /></a>
 </p>
 
 <p align="center">
@@ -81,6 +81,7 @@
 * **Zero External Tracking**: Orbis does not track, sell, or collect personal data.
 * **Device-Local Storage**: All browsing history, pinned app preferences, and settings remain 100% on your device.
 * **Sandboxed Overlays**: Overlays run securely in standard Android application space without unauthorized system modifications.
+* **Full Transparency**: Read our complete [Privacy Policy & Terms of Service](PRIVACY.md).
 
 ---
 
