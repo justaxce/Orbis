@@ -6,12 +6,14 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.view.ContextThemeWrapper
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.updater.UpdateInfo
 import com.floating.virtualwindow.updater.UpdateManager
@@ -19,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.min
 
 class UpdateDialog(
     private val context: Context,
@@ -26,7 +29,8 @@ class UpdateDialog(
     private val updateManager: UpdateManager
 ) {
 
-    private val dialog: Dialog = Dialog(context)
+    private val themedContext = ContextThemeWrapper(context, R.style.Theme_FloatingVirtualWindow)
+    private val dialog: Dialog = Dialog(themedContext, R.style.Theme_FloatingVirtualWindow)
     private var downloadedApk: File? = null
     private var isDownloading = false
 
@@ -34,7 +38,7 @@ class UpdateDialog(
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_update, null)
+        val view = LayoutInflater.from(themedContext).inflate(R.layout.dialog_update, null)
         dialog.setContentView(view)
 
         val tvUpdateVersion = view.findViewById<TextView>(R.id.tvUpdateVersion)
@@ -50,6 +54,8 @@ class UpdateDialog(
         tvUpdateVersion.text = "v$currentVersion → v${updateInfo.versionName}"
         tvUpdateSize.text = updateInfo.apkSize
         tvUpdateNotes.text = updateInfo.releaseNotes
+
+        btnUpdateAction.text = "Download & Update (${updateInfo.apkSize})"
 
         if (updateInfo.forceUpdate) {
             btnUpdateCancel.visibility = View.GONE
@@ -87,7 +93,7 @@ class UpdateDialog(
                         pbDownload.progress = percent
                         val dlMB = String.format("%.1f", downloaded / (1024.0 * 1024.0))
                         val totalMB = String.format("%.1f", total / (1024.0 * 1024.0))
-                        tvDownloadStatus.text = "Downloading: $percent% ($dlMB MB / $totalMB MB)"
+                        tvDownloadStatus.text = "Downloading: $percent% • $dlMB MB / $totalMB MB"
                     } else {
                         pbDownload.isIndeterminate = true
                         val dlMB = String.format("%.1f", downloaded / (1024.0 * 1024.0))
@@ -101,13 +107,13 @@ class UpdateDialog(
                     pbDownload.progress = 100
                     tvDownloadStatus.text = "Download complete! Ready to install."
                     btnUpdateAction.isEnabled = true
-                    btnUpdateAction.text = "Install Now"
+                    btnUpdateAction.text = "Install Update Now"
 
                     // Auto-launch installer
                     updateManager.installApk(apk)
                 } else {
                     btnUpdateAction.isEnabled = true
-                    btnUpdateAction.text = "Retry"
+                    btnUpdateAction.text = "Retry Download"
                     tvDownloadStatus.text = "Download failed. Please check internet connection."
                     Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
                 }
@@ -118,6 +124,10 @@ class UpdateDialog(
     fun show() {
         if (!dialog.isShowing) {
             dialog.show()
+            val displayMetrics = context.resources.displayMetrics
+            val maxAllowedWidth = (440 * displayMetrics.density).toInt()
+            val targetWidth = min((displayMetrics.widthPixels * 0.90).toInt(), maxAllowedWidth)
+            dialog.window?.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
     }
 }

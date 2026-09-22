@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_floating_window"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="22dp">
 
     <!-- Header -->
     <LinearLayout
@@ -13,11 +13,11 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="14dp">
+        android:layout_marginBottom="16dp">
 
         <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_orbis_logo"
             android:contentDescription="Orbis Logo" />
 
@@ -25,70 +25,102 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="14dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Update Available"
+                android:text="New Update Available"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="17sp"
+                android:textStyle="bold"
                 android:fontFamily="sans-serif-medium" />
 
-            <TextView
-                android:id="@+id/tvUpdateVersion"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="v1.0.0 → v1.1.0"
-                android:textColor="@color/accent"
-                android:textSize="12sp" />
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="3dp">
 
-        <TextView
-            android:id="@+id/tvUpdateSize"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_status_badge"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="1.8 MB"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
+                <TextView
+                    android:id="@+id/tvUpdateVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="v1.0.0 → v1.0.2"
+                    android:textColor="@color/accent"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" • "
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvUpdateSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_status_badge"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="1.9 MB"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/border_subtle"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginBottom="14dp" />
 
-    <!-- Release Notes Scroll -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="WHAT'S NEW"
-        android:textColor="@color/text_muted"
-        android:textSize="11sp"
-        android:letterSpacing="0.08"
-        android:fontFamily="sans-serif-medium"
-        android:layout_marginBottom="6dp" />
-
-    <ScrollView
+    <!-- Release Notes Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="160dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/surface_variant"
+        app:cardCornerRadius="12dp"
+        app:strokeWidth="0dp">
 
-        <TextView
-            android:id="@+id/tvUpdateNotes"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="• New features and enhancements\n• Bug fixes and performance improvements"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:lineSpacingMultiplier="1.2" />
-    </ScrollView>
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WHAT'S NEW"
+                android:textColor="@color/accent"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxHeight="160dp">
+
+                <TextView
+                    android:id="@+id/tvUpdateNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="• Fixed sidebar auto-restore on updates\n• Fixed setup guide dialog\n• Fixed 1-tap keyboard opening"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.25" />
+            </ScrollView>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Progress Indicator (During Download) -->
     <LinearLayout
@@ -103,7 +135,7 @@
             android:id="@+id/pbDownload"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
+            android:layout_height="6dp"
             android:progressTint="@color/accent"
             android:progress="0"
             android:max="100" />
@@ -114,33 +146,35 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:text="Downloading: 0%"
-            android:textColor="@color/text_muted"
-            android:textSize="11sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Action Buttons -->
+    <!-- Action Buttons (Stacked, Full Width) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end">
+        android:orientation="vertical">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUpdateAction"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Download &amp; Update"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#090B0E"
+            app:backgroundTint="@color/accent"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnUpdateCancel"
             style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:text="Later"
-            android:textColor="@color/text_muted"
-            android:layout_marginEnd="8dp" />
-
-        <Button
-            android:id="@+id/btnUpdateAction"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="Download &amp; Install"
-            android:textColor="#090B0E"
-            app:backgroundTint="@color/accent" />
+            android:layout_marginTop="6dp"
+            android:text="Remind Me Later"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>
