@@ -153,4 +153,51 @@ object WebAppCatalog {
             null
         }
     }
+
+    private val KNOWN_LANDSCAPE_APPS: Set<String> = setOf(
+        "com.dts.freefireth",
+        "com.dts.freefiremax",
+        "com.pubg.imobile",
+        "com.pubg.krmobile",
+        "com.tencent.ig",
+        "com.vng.pubgmobile",
+        "com.activision.callofduty.shooter",
+        "com.garena.game.codm",
+        "com.epicgames.fortnite",
+        "com.ea.gp.apexmobile",
+        "com.miHoYo.GenshinImpact",
+        "com.HoYoverse.hkrpgoversea",
+        "com.supercell.clashofclans",
+        "com.supercell.brawlstars",
+        "com.supercell.clashroyale",
+        "com.gameloft.android.ANMP.GloftA9HM",
+        "com.gameloft.android.ANMP.GloftA8HM",
+        "com.roblox.client",
+        "com.mojang.minecraftpe",
+        "com.ea.game.nfs14_row",
+        "com.crafting.and.building",
+        "com.netease.lztgglobal",
+        "com.carxtech.sr"
+    )
+
+    /**
+     * Checks if an app is a landscape-oriented game or widescreen application.
+     */
+    fun isLandscapeApp(context: Context, packageName: String): Boolean {
+        if (KNOWN_LANDSCAPE_APPS.contains(packageName)) return true
+
+        return try {
+            val pm = context.packageManager
+            val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
+            val component = launchIntent.component ?: return false
+            val activityInfo = pm.getActivityInfo(component, 0)
+            val orientation = activityInfo.screenOrientation
+            orientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE ||
+            orientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE ||
+            orientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE ||
+            orientation == android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

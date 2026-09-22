@@ -40,15 +40,16 @@
                 android:singleLine="true"
                 android:ellipsize="end" />
 
-            <!-- Keyboard Focus Toggle Button -->
+
+            <!-- Orientation / Aspect Ratio Toggle (9:16 Portrait <-> 16:9 Landscape) -->
             <ImageButton
-                android:id="@+id/btnKeyboard"
+                android:id="@+id/btnRotateRatio"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_keyboard"
+                android:src="@drawable/ic_rotate_ratio"
                 android:padding="5dp"
-                android:contentDescription="@string/keyboard_toggle_hint" />
+                android:contentDescription="Rotate Window Aspect Ratio" />
 
             <!-- Minimize Button -->
             <ImageButton

@@ -127,10 +127,24 @@ class SidebarDockView(
     }
 
     fun show() {
+        val displayMetrics = context.resources.displayMetrics
+        layoutParams.height = (displayMetrics.heightPixels * 0.90).toInt()
         populateApps()
         if (view.parent == null) {
             try {
                 windowManager.addView(view, layoutParams)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun handleOrientationChanged() {
+        val displayMetrics = context.resources.displayMetrics
+        layoutParams.height = (displayMetrics.heightPixels * 0.90).toInt()
+        if (view.parent != null) {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

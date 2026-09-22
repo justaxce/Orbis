@@ -290,8 +290,10 @@ class MainActivity : AppCompatActivity() {
                 tvAppVersionStatus.text = "Update Available: v${update.versionName} (${update.apkSize})"
                 UpdateDialog(this@MainActivity, update, updateManager).show()
             } else {
-                tvAppVersionStatus.text = getString(R.string.update_latest_toast)
-                Toast.makeText(this@MainActivity, R.string.update_latest_toast, Toast.LENGTH_SHORT).show()
+                val currentVer = updateManager.getCurrentVersionName()
+                val latestMsg = "You are on the latest version (v$currentVer)"
+                tvAppVersionStatus.text = latestMsg
+                Toast.makeText(this@MainActivity, latestMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }

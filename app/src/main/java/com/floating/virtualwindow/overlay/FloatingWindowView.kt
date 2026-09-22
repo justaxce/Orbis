@@ -13,7 +13,6 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -28,6 +27,7 @@ import com.floating.virtualwindow.engine.TouchForwarder
 import com.floating.virtualwindow.tools.FloatingBrowserView
 import com.floating.virtualwindow.tools.FloatingCalculatorView
 import com.floating.virtualwindow.ui.WirelessGuideDialog
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -46,7 +46,7 @@ class FloatingWindowView(
     private val ivHeaderIcon: ImageView = view.findViewById(R.id.ivHeaderIcon)
     private val tvHeaderTitle: TextView = view.findViewById(R.id.tvHeaderTitle)
     private val windowHeader: LinearLayout = view.findViewById(R.id.windowHeader)
-    private val btnKeyboard: ImageButton = view.findViewById(R.id.btnKeyboard)
+    private val btnRotateRatio: ImageButton = view.findViewById(R.id.btnRotateRatio)
     private val btnMinimize: ImageButton = view.findViewById(R.id.btnMinimize)
     private val btnMaximize: ImageButton = view.findViewById(R.id.btnMaximize)
     private val btnClose: ImageButton = view.findViewById(R.id.btnClose)
@@ -54,6 +54,9 @@ class FloatingWindowView(
     private val flResizeBR: FrameLayout = view.findViewById(R.id.flResizeBR)
     private val flResizeBL: FrameLayout = view.findViewById(R.id.flResizeBL)
     private val tvResizeBadge: TextView = view.findViewById(R.id.tvResizeBadge)
+
+    var isLandscapeRatio: Boolean = false
+    val currentAspectRatio: Float get() = if (isLandscapeRatio) ASPECT_RATIO_16_9 else ASPECT_RATIO_9_16
 
     private val virtualDisplayManager = VirtualDisplayManager(context)
     private val touchForwarder = TouchForwarder(750, 1100, 750, 1100)
@@ -89,12 +92,24 @@ class FloatingWindowView(
         }
 
         val displayMetrics = context.resources.displayMetrics
-        val preferredWidth = preferencesManager.windowWidth.coerceAtLeast(320)
-        val safeInitialWidth = min(preferredWidth, (displayMetrics.widthPixels * 0.90).toInt())
-        val safeInitialHeight = (safeInitialWidth / ASPECT_RATIO_9_16).toInt().coerceAtMost((displayMetrics.heightPixels * 0.82).toInt())
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val isLandscape = screenWidth > screenHeight
+
+        val safeInitialHeight = if (isLandscape) {
+            (screenHeight * 0.84).toInt()
+        } else {
+            val preferredWidth = preferencesManager.windowWidth.coerceAtLeast(320)
+            val safeWidth = min(preferredWidth, (screenWidth * 0.90).toInt())
+            (safeWidth / ASPECT_RATIO_9_16).toInt().coerceAtMost((screenHeight * 0.80).toInt())
+        }
         val finalInitialWidth = (safeInitialHeight * ASPECT_RATIO_9_16).toInt()
-        val safeInitialX = (displayMetrics.widthPixels - finalInitialWidth) / 2
-        val safeInitialY = (displayMetrics.heightPixels * 0.08).toInt()
+        val safeInitialX = (screenWidth - finalInitialWidth) / 2
+        val safeInitialY = if (isLandscape) {
+            (screenHeight - safeInitialHeight) / 2
+        } else {
+            (screenHeight * 0.08).toInt()
+        }
 
         // Important: Use FLAG_NOT_FOCUSABLE by default so underlying apps (WhatsApp, Instagram, etc.)
         // retain 100% input and soft keyboard (IME) capability without interference.
@@ -149,6 +164,7 @@ class FloatingWindowView(
             val displayMetrics = context.resources.displayMetrics
             val screenWidth = displayMetrics.widthPixels
             val screenHeight = displayMetrics.heightPixels
+            val isLandscape = screenWidth > screenHeight
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -164,16 +180,28 @@ class FloatingWindowView(
                     val dx = event.rawX - initialTouchX
                     val dy = event.rawY - initialTouchY
 
-                    // Proportional 9:16 diagonal drag vector
-                    val deltaW = (dx + dy * ASPECT_RATIO_9_16) / 2.0f
+                    // In landscape ratio (16:9), dx is the dominant vector
+                    val deltaW = if (isLandscapeRatio) {
+                        dx
+                    } else {
+                        if (isLandscape) {
+                            if (abs(dx) > abs(dy) * 0.5f) dx else dy * currentAspectRatio
+                        } else {
+                            (dx + dy * currentAspectRatio) / 2.0f
+                        }
+                    }
 
-                    val minW = (screenWidth * 0.35).toInt().coerceAtLeast(260)
-                    val maxW = min((screenWidth * 0.94).toInt(), screenWidth - layoutParams.x)
-                    val maxH = min((screenHeight * 0.88).toInt(), screenHeight - layoutParams.y)
-                    val clampedMaxW = min(maxW, (maxH * ASPECT_RATIO_9_16).toInt())
+                    val minDimension = min(screenWidth, screenHeight)
+                    val minW = if (isLandscapeRatio) (minDimension * 0.45).toInt().coerceIn(320, 560)
+                               else (minDimension * 0.28).toInt().coerceIn(200, 320)
+                    val maxAvailableW = screenWidth - layoutParams.x
+                    val maxAvailableH = screenHeight - layoutParams.y
+                    val maxBoundW = min((screenWidth * 0.95).toInt(), maxAvailableW)
+                    val maxBoundH = min((screenHeight * 0.92).toInt(), maxAvailableH)
+                    val clampedMaxW = max(minW, min(maxBoundW, (maxBoundH * currentAspectRatio).toInt()))
 
                     val newWidth = (initialWidth + deltaW.toInt()).coerceIn(minW, clampedMaxW)
-                    val newHeight = (newWidth / ASPECT_RATIO_9_16).toInt()
+                    val newHeight = (newWidth / currentAspectRatio).toInt()
 
                     layoutParams.width = newWidth
                     layoutParams.height = newHeight
@@ -200,6 +228,7 @@ class FloatingWindowView(
             val displayMetrics = context.resources.displayMetrics
             val screenWidth = displayMetrics.widthPixels
             val screenHeight = displayMetrics.heightPixels
+            val isLandscape = screenWidth > screenHeight
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -216,19 +245,31 @@ class FloatingWindowView(
                     val dx = event.rawX - initialTouchX
                     val dy = event.rawY - initialTouchY
 
-                    // Dragging left (-dx) expands the window
-                    val deltaW = (-dx + dy * ASPECT_RATIO_9_16) / 2.0f
+                    // Dragging left (-dx) expands the window horizontally
+                    val deltaW = if (isLandscapeRatio) {
+                        -dx
+                    } else {
+                        if (isLandscape) {
+                            if (abs(dx) > abs(dy) * 0.5f) -dx else dy * currentAspectRatio
+                        } else {
+                            (-dx + dy * currentAspectRatio) / 2.0f
+                        }
+                    }
 
-                    val minW = (screenWidth * 0.35).toInt().coerceAtLeast(260)
+                    val minDimension = min(screenWidth, screenHeight)
+                    val minW = if (isLandscapeRatio) (minDimension * 0.45).toInt().coerceIn(320, 560)
+                               else (minDimension * 0.28).toInt().coerceIn(200, 320)
                     val maxRight = initialX + initialWidth
-                    val maxW = min((screenWidth * 0.94).toInt(), maxRight)
-                    val maxH = min((screenHeight * 0.88).toInt(), screenHeight - layoutParams.y)
-                    val clampedMaxW = min(maxW, (maxH * ASPECT_RATIO_9_16).toInt())
+                    val maxAvailableW = maxRight
+                    val maxAvailableH = screenHeight - layoutParams.y
+                    val maxBoundW = min((screenWidth * 0.95).toInt(), maxAvailableW)
+                    val maxBoundH = min((screenHeight * 0.92).toInt(), maxAvailableH)
+                    val clampedMaxW = max(minW, min(maxBoundW, (maxBoundH * currentAspectRatio).toInt()))
 
                     val targetW = (initialWidth + deltaW.toInt()).coerceIn(minW, clampedMaxW)
                     val newX = (maxRight - targetW).coerceIn(0, maxRight - minW)
                     val actualWidth = maxRight - newX
-                    val newHeight = (actualWidth / ASPECT_RATIO_9_16).toInt()
+                    val newHeight = (actualWidth / currentAspectRatio).toInt()
 
                     layoutParams.x = newX
                     layoutParams.width = actualWidth
@@ -253,14 +294,16 @@ class FloatingWindowView(
     }
 
     private fun showResizeBadge(width: Int, height: Int) {
-        tvResizeBadge.text = "📐 9:16 • ${width} × ${height}"
+        val tag = if (isLandscapeRatio) "🎮 16:9" else "📐 9:16"
+        tvResizeBadge.text = "$tag • ${width} × ${height}"
         tvResizeBadge.alpha = 0f
         tvResizeBadge.visibility = View.VISIBLE
         tvResizeBadge.animate().alpha(1f).setDuration(120).start()
     }
 
     private fun updateResizeBadge(width: Int, height: Int) {
-        tvResizeBadge.text = "📐 9:16 • ${width} × ${height}"
+        val tag = if (isLandscapeRatio) "🎮 16:9" else "📐 9:16"
+        tvResizeBadge.text = "$tag • ${width} × ${height}"
     }
 
     private fun hideResizeBadge() {
@@ -274,15 +317,8 @@ class FloatingWindowView(
     }
 
     private fun setupControls() {
-        btnKeyboard.setOnClickListener {
-            val newFocus = !isKeyboardFocusEnabled
-            setWindowFocusable(newFocus)
-            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            if (newFocus) {
-                imm?.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
-            } else {
-                imm?.hideSoftInputFromWindow(view.windowToken, 0)
-            }
+        btnRotateRatio.setOnClickListener {
+            toggleOrientationRatio()
         }
 
         btnMinimize.setOnClickListener {
@@ -302,36 +338,35 @@ class FloatingWindowView(
         isKeyboardFocusEnabled = focusable
         if (focusable) {
             layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-            btnKeyboard.setColorFilter(context.getColor(R.color.accent))
         } else {
             layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            btnKeyboard.clearColorFilter()
         }
         updateLayout()
     }
 
     private fun toggleMaximize() {
         val displayMetrics = context.resources.displayMetrics
+        val isLandscape = displayMetrics.widthPixels > displayMetrics.heightPixels
         if (!isMaximized) {
             savedWidth = layoutParams.width
             savedHeight = layoutParams.height
             savedX = layoutParams.x
             savedY = layoutParams.y
 
-            val maxH = (displayMetrics.heightPixels * 0.85).toInt()
-            val maxW = min((displayMetrics.widthPixels * 0.94).toInt(), (maxH * ASPECT_RATIO_9_16).toInt())
+            val maxH = (displayMetrics.heightPixels * (if (isLandscape) 0.90 else 0.85)).toInt()
+            val maxW = min((displayMetrics.widthPixels * 0.94).toInt(), (maxH * currentAspectRatio).toInt())
 
             layoutParams.width = maxW
-            layoutParams.height = (maxW / ASPECT_RATIO_9_16).toInt()
+            layoutParams.height = (maxW / currentAspectRatio).toInt()
             layoutParams.x = (displayMetrics.widthPixels - maxW) / 2
-            layoutParams.y = (displayMetrics.heightPixels * 0.06).toInt()
+            layoutParams.y = (displayMetrics.heightPixels - layoutParams.height) / 2
             isMaximized = true
         } else {
             val maxX = max(0, displayMetrics.widthPixels - savedWidth)
             val maxY = max(0, displayMetrics.heightPixels - savedHeight)
 
-            layoutParams.width = savedWidth.coerceIn(260, displayMetrics.widthPixels)
-            layoutParams.height = savedHeight.coerceIn(460, displayMetrics.heightPixels)
+            layoutParams.width = savedWidth.coerceIn(200, displayMetrics.widthPixels)
+            layoutParams.height = savedHeight.coerceIn(350, displayMetrics.heightPixels)
             layoutParams.x = savedX.coerceIn(0, maxX)
             layoutParams.y = savedY.coerceIn(0, maxY)
             isMaximized = false
@@ -339,6 +374,57 @@ class FloatingWindowView(
         virtualDisplayManager.resize(layoutParams.width, layoutParams.height, 320)
         touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
         updateLayout()
+    }
+
+    fun applyAspectRatio(isLandscape: Boolean) {
+        isLandscapeRatio = isLandscape
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+
+        if (isLandscapeRatio) {
+            // 16:9 Landscape Gaming Mode (e.g. Free Fire, BGMI, COD, Widescreen media)
+            val targetW = min((screenWidth * 0.92).toInt(), (screenHeight * 1.55f).toInt())
+            val targetH = (targetW / ASPECT_RATIO_16_9).toInt().coerceAtMost((screenHeight * 0.86).toInt())
+            val finalW = (targetH * ASPECT_RATIO_16_9).toInt()
+
+            layoutParams.width = finalW
+            layoutParams.height = targetH
+            layoutParams.x = (screenWidth - finalW) / 2
+            layoutParams.y = (screenHeight - targetH) / 2
+            btnRotateRatio.setColorFilter(context.getColor(R.color.accent))
+        } else {
+            // 9:16 Portrait Mode (e.g. Instagram, WhatsApp, TikTok, standard mobile apps)
+            val isScreenLandscape = screenWidth > screenHeight
+            val safeHeight = if (isScreenLandscape) {
+                (screenHeight * 0.84).toInt()
+            } else {
+                val preferredWidth = preferencesManager.windowWidth.coerceAtLeast(320)
+                val safeWidth = min(preferredWidth, (screenWidth * 0.90).toInt())
+                (safeWidth / ASPECT_RATIO_9_16).toInt().coerceAtMost((screenHeight * 0.80).toInt())
+            }
+            val finalW = (safeHeight * ASPECT_RATIO_9_16).toInt()
+
+            layoutParams.width = finalW
+            layoutParams.height = safeHeight
+            layoutParams.x = (screenWidth - finalW) / 2
+            layoutParams.y = if (isScreenLandscape) (screenHeight - safeHeight) / 2 else (screenHeight * 0.08).toInt()
+            btnRotateRatio.clearColorFilter()
+        }
+
+        preferencesManager.windowWidth = layoutParams.width
+        preferencesManager.windowHeight = layoutParams.height
+        virtualDisplayManager.resize(layoutParams.width, layoutParams.height, 320)
+        touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
+        updateLayout()
+    }
+
+    fun toggleOrientationRatio() {
+        applyAspectRatio(!isLandscapeRatio)
+        showResizeBadge(layoutParams.width, layoutParams.height)
+        view.postDelayed({
+            hideResizeBadge()
+        }, 1200)
     }
 
     fun launchAppInWindow(packageName: String, appName: String, icon: Drawable?) {
@@ -350,6 +436,10 @@ class FloatingWindowView(
         }
 
         cleanContent()
+
+        // Auto-detect if this is a landscape game (Free Fire, BGMI, COD) or standard portrait app
+        val isGameOrLandscape = com.floating.virtualwindow.data.WebAppCatalog.isLandscapeApp(context, packageName)
+        applyAspectRatio(isGameOrLandscape)
 
         // 1. If Wireless Debugging (Shizuku) is active, ALWAYS launch the real native app in Virtual Display!
         if (GuestLauncher.isShizukuAvailable()) {
@@ -483,13 +573,69 @@ class FloatingWindowView(
     }
 
     fun show() {
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val isLandscape = screenWidth > screenHeight
+
+        val maxSafeH = (screenHeight * (if (isLandscape) 0.88 else 0.82)).toInt()
+        val maxSafeW = min((screenWidth * 0.94).toInt(), (maxSafeH * currentAspectRatio).toInt())
+
+        if (layoutParams.height > maxSafeH || layoutParams.width > maxSafeW || layoutParams.height < 200) {
+            layoutParams.height = maxSafeH
+            layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
+        }
+
+        val maxX = max(0, screenWidth - layoutParams.width)
+        val maxY = max(0, screenHeight - layoutParams.height)
+        layoutParams.x = layoutParams.x.coerceIn(0, maxX)
+        layoutParams.y = layoutParams.y.coerceIn(0, maxY)
+
         if (view.parent == null) {
             try {
                 windowManager.addView(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        } else {
+            updateLayout()
         }
+    }
+
+    /**
+     * Called when the device orientation changes (Portrait <-> Landscape).
+     * Re-clamps window dimensions and coordinates so it never clips or overflows the screen.
+     */
+    fun handleOrientationChanged() {
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val isLandscape = screenWidth > screenHeight
+
+        val maxSafeH = (screenHeight * (if (isLandscape) 0.86 else 0.80)).toInt()
+        val maxSafeW = min((screenWidth * 0.94).toInt(), (maxSafeH * currentAspectRatio).toInt())
+
+        if (isLandscape) {
+            if (layoutParams.height > maxSafeH) {
+                layoutParams.height = maxSafeH
+                layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
+            }
+            layoutParams.x = ((screenWidth - layoutParams.width) / 2).coerceIn(0, max(0, screenWidth - layoutParams.width))
+            layoutParams.y = ((screenHeight - layoutParams.height) / 2).coerceIn(0, max(0, screenHeight - layoutParams.height))
+        } else {
+            if (layoutParams.height > maxSafeH || layoutParams.width > maxSafeW) {
+                layoutParams.height = maxSafeH
+                layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
+            }
+            val maxX = max(0, screenWidth - layoutParams.width)
+            val maxY = max(0, screenHeight - layoutParams.height)
+            layoutParams.x = layoutParams.x.coerceIn(0, maxX)
+            layoutParams.y = layoutParams.y.coerceIn(0, maxY)
+        }
+
+        virtualDisplayManager.resize(layoutParams.width, layoutParams.height, 320)
+        touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
+        updateLayout()
     }
 
     /**
@@ -534,5 +680,6 @@ class FloatingWindowView(
 
     companion object {
         const val ASPECT_RATIO_9_16 = 9.0f / 16.0f
+        const val ASPECT_RATIO_16_9 = 16.0f / 9.0f
     }
 }

@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
@@ -158,6 +159,14 @@ class FloatingOverlayService : Service() {
             }
         }
         return START_STICKY
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        floatingWindowView?.handleOrientationChanged()
+        edgeHandleView?.handleOrientationChanged()
+        sidebarDockView?.handleOrientationChanged()
+        floatingBubbleView?.handleOrientationChanged()
     }
 
     override fun onDestroy() {

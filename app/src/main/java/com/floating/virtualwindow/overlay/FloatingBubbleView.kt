@@ -13,6 +13,7 @@ import android.view.WindowManager
 import android.widget.ImageView
 import com.floating.virtualwindow.R
 import kotlin.math.abs
+import kotlin.math.max
 
 @SuppressLint("ClickableViewAccessibility")
 class FloatingBubbleView(
@@ -116,6 +117,22 @@ class FloatingBubbleView(
         if (view.parent != null) {
             try {
                 windowManager.removeView(view)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun handleOrientationChanged() {
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val bubbleSize = 160
+        layoutParams.x = layoutParams.x.coerceIn(20, max(20, screenWidth - bubbleSize))
+        layoutParams.y = layoutParams.y.coerceIn(20, max(20, screenHeight - bubbleSize))
+        if (view.parent != null) {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

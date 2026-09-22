@@ -14,6 +14,7 @@ import android.view.WindowManager
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.PreferencesManager
 import kotlin.math.abs
+import kotlin.math.max
 
 @SuppressLint("ClickableViewAccessibility")
 class EdgeHandleView(
@@ -179,6 +180,22 @@ class EdgeHandleView(
         if (view.parent != null) {
             try {
                 windowManager.removeView(view)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun handleOrientationChanged() {
+        val displayMetrics = context.resources.displayMetrics
+        val screenHeight = displayMetrics.heightPixels
+        val handleHeight = if (view.height > 0) view.height else 150
+        val clampedY = layoutParams.y.coerceIn(60, max(60, screenHeight - handleHeight - 60))
+        layoutParams.y = clampedY
+        preferencesManager.handleYPosition = clampedY
+        if (view.parent != null) {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
