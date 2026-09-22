@@ -1,10 +1,10 @@
 {
-  "versionCode": 13,
-  "versionName": "1.1.2",
+  "versionCode": 14,
+  "versionName": "1.2.0",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.1.2/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.0/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Official brand app icon and adaptive icon from orbis.png\n• Full-screen loading/splash screen with high-resolution Orbis branding\n• Developer & Creator card in Settings (Ace - Portfolio & Discord redirect)",
+  "releaseNotes": "• Official Developer Release Signature (Ace / InfernoDev)\n• Major Security Upgrade: Permanent developer cryptographic identity\n• Official brand app icon, adaptive icon, and loading splash screen\n• NOTE: Users upgrading from v1.0.x-v1.1.x must uninstall previous version once due to developer signature upgrade",
   "forceUpdate": false
 }

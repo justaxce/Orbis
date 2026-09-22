@@ -11,11 +11,22 @@ android {
         applicationId = "com.floating.virtualwindow"
         minSdk = 26
         targetSdk = 34
-        versionCode = 13
-        versionName = "1.1.2"
+        versionCode = 14
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += listOf("en")
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("ORBIS_KEYSTORE_PATH") ?: "/home/ubuntu/orbis-release.keystore")
+            storePassword = System.getenv("ORBIS_KEYSTORE_PASSWORD") ?: "OrbisSecure2026!"
+            keyAlias = System.getenv("ORBIS_KEY_ALIAS") ?: "orbis"
+            keyPassword = System.getenv("ORBIS_KEY_PASSWORD") ?: "OrbisSecure2026!"
+            enableV1Signing = true
+            enableV2Signing = true
+        }
     }
 
     buildTypes {
@@ -26,7 +37,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = true
