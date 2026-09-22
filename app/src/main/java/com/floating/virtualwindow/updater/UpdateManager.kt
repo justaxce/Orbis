@@ -298,10 +298,10 @@ class UpdateManager(private val context: Context) {
     fun installApk(apkFile: File): Boolean {
         if (!apkFile.exists()) return false
 
-        // Attempt silent install via Shizuku if active and permitted
+        // Attempt silent install via Shizuku if active and permitted, then immediately restore FloatingOverlayService
         if (GuestLauncher.isShizukuAvailable()) {
             try {
-                val cmd = "pm install -r \"${apkFile.absolutePath}\""
+                val cmd = "pm install -r \"${apkFile.absolutePath}\" && am start-foreground-service -n com.floating.virtualwindow/.service.FloatingOverlayService -a com.floating.virtualwindow.START"
                 val method = rikka.shizuku.Shizuku::class.java.getDeclaredMethod(
                     "newProcess",
                     Array<String>::class.java,

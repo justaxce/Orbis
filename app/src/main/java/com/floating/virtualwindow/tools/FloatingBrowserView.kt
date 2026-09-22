@@ -5,7 +5,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Message
 import android.util.AttributeSet
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -15,6 +17,7 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -26,6 +29,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import com.floating.virtualwindow.R
+import com.floating.virtualwindow.data.BrowserHistoryManager
 
 @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
 class FloatingBrowserView @JvmOverloads constructor(
@@ -38,7 +42,10 @@ class FloatingBrowserView @JvmOverloads constructor(
     private val etUrl: EditText
     private val pbLoading: ProgressBar
     private val btnBack: ImageButton
+    private val btnClearUrl: ImageButton
     private val btnRefresh: ImageButton
+    private val flOAuthPopupContainer: FrameLayout
+    private var popupWebView: WebView? = null
 
     // Text Selection Toolbar
     private val llSelectionToolbar: LinearLayout
@@ -57,7 +64,9 @@ class FloatingBrowserView @JvmOverloads constructor(
         etUrl = view.findViewById(R.id.etBrowserUrl)
         pbLoading = view.findViewById(R.id.pbBrowserLoading)
         btnBack = view.findViewById(R.id.btnBrowserBack)
+        btnClearUrl = view.findViewById(R.id.btnClearUrl)
         btnRefresh = view.findViewById(R.id.btnBrowserRefresh)
+        flOAuthPopupContainer = view.findViewById(R.id.flOAuthPopupContainer)
 
         llSelectionToolbar = view.findViewById(R.id.llSelectionToolbar)
         tvSelectedTextPreview = view.findViewById(R.id.tvSelectedTextPreview)
@@ -80,8 +89,12 @@ class FloatingBrowserView @JvmOverloads constructor(
         settings.displayZoomControls = false
         settings.mediaPlaybackRequiresUserGesture = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        settings.setSupportMultipleWindows(true)
+        settings.javaScriptCanOpenWindowsAutomatically = true
+        settings.allowFileAccess = true
+        settings.allowContentAccess = true
 
-        // Enable Cookies (including 3rd-party cookies for login sessions)
+        // Enable Cookies (including 3rd-party cookies for login sessions across all services)
         try {
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
@@ -106,6 +119,12 @@ class FloatingBrowserView @JvmOverloads constructor(
             override fun onPageFinished(view: WebView?, url: String?) {
                 pbLoading.visibility = View.GONE
                 injectSelectionListener()
+                try {
+                    CookieManager.getInstance().flush()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                BrowserHistoryManager.recordVisit(context, url, view?.title)
             }
         }
 
@@ -117,6 +136,19 @@ class FloatingBrowserView @JvmOverloads constructor(
                 } else {
                     pbLoading.visibility = View.VISIBLE
                 }
+            }
+
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean {
+                return handleOAuthPopupWindow(resultMsg)
+            }
+
+            override fun onCloseWindow(window: WebView?) {
+                dismissOAuthPopup()
             }
         }
 
@@ -187,6 +219,19 @@ class FloatingBrowserView @JvmOverloads constructor(
 
         btnRefresh.setOnClickListener {
             webView.reload()
+        }
+
+        btnClearUrl.setOnClickListener {
+            if (etUrl.text.isNotEmpty()) {
+                etUrl.setText("")
+                etUrl.requestFocus()
+                onFocusChanged?.invoke(true)
+                val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                imm?.showSoftInput(etUrl, InputMethodManager.SHOW_IMPLICIT)
+            } else if (pbLoading.visibility == View.VISIBLE) {
+                webView.stopLoading()
+                pbLoading.visibility = View.GONE
+            }
         }
 
         etUrl.setOnTouchListener { _, event ->
@@ -285,7 +330,107 @@ class FloatingBrowserView @JvmOverloads constructor(
         webView.loadUrl(input)
     }
 
+    private fun handleOAuthPopupWindow(resultMsg: Message?): Boolean {
+        if (resultMsg == null) return false
+        flOAuthPopupContainer.removeAllViews()
+        flOAuthPopupContainer.visibility = View.VISIBLE
+
+        val popup = WebView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.setSupportMultipleWindows(false)
+            settings.userAgentString = ANDROID_MOBILE_USER_AGENT
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    try {
+                        CookieManager.getInstance().flush()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    BrowserHistoryManager.recordVisit(context, url, view?.title)
+                }
+
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                    return false
+                }
+            }
+
+            webChromeClient = object : WebChromeClient() {
+                override fun onCloseWindow(window: WebView?) {
+                    dismissOAuthPopup()
+                }
+            }
+        }
+
+        val popupLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            setBackgroundColor(context.getColor(R.color.background))
+
+            val density = resources.displayMetrics.density
+            val topBar = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (34 * density).toInt())
+                setBackgroundColor(context.getColor(R.color.surface))
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding((10 * density).toInt(), 0, (6 * density).toInt(), 0)
+
+                val titleTv = TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    text = "Sign in / Authentication"
+                    setTextColor(context.getColor(R.color.text_primary))
+                    textSize = 12f
+                    setSingleLine(true)
+                }
+
+                val closeBtn = ImageButton(context).apply {
+                    layoutParams = LinearLayout.LayoutParams((28 * density).toInt(), (28 * density).toInt())
+                    setImageResource(R.drawable.ic_close)
+                    setBackgroundResource(android.R.drawable.btn_default)
+                    contentDescription = "Close Sign-In"
+                    setOnClickListener {
+                        dismissOAuthPopup()
+                    }
+                }
+
+                addView(titleTv)
+                addView(closeBtn)
+            }
+
+            addView(topBar)
+            addView(popup, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+
+        flOAuthPopupContainer.addView(popupLayout)
+        popupWebView = popup
+
+        val transport = resultMsg.obj as? WebView.WebViewTransport
+        transport?.webView = popup
+        resultMsg.sendToTarget()
+        return true
+    }
+
+    private fun dismissOAuthPopup() {
+        popupWebView?.stopLoading()
+        popupWebView?.destroy()
+        popupWebView = null
+        flOAuthPopupContainer.removeAllViews()
+        flOAuthPopupContainer.visibility = View.GONE
+        try {
+            CookieManager.getInstance().flush()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        webView.reload()
+    }
+
     fun destroy() {
+        dismissOAuthPopup()
         webView.stopLoading()
         webView.destroy()
     }

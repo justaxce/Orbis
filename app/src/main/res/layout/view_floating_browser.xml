@@ -39,12 +39,23 @@
             android:inputType="textUri" />
 
         <ImageButton
-            android:id="@+id/btnBrowserRefresh"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:id="@+id/btnClearUrl"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_close"
-            android:contentDescription="Refresh" />
+            android:padding="5dp"
+            android:contentDescription="Clear or Stop" />
+
+        <ImageButton
+            android:id="@+id/btnBrowserRefresh"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="2dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_refresh"
+            android:padding="4dp"
+            android:contentDescription="Reload" />
     </LinearLayout>
 
     <ProgressBar
@@ -114,10 +125,22 @@
             android:contentDescription="Dismiss" />
     </LinearLayout>
 
-    <!-- Web View -->
-    <WebView
-        android:id="@+id/wvBrowser"
+    <!-- Web View & OAuth Popup Container -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1">
+
+        <WebView
+            android:id="@+id/wvBrowser"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <FrameLayout
+            android:id="@+id/flOAuthPopupContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:background="@color/background" />
+    </FrameLayout>
 </LinearLayout>
