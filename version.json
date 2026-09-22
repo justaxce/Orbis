@@ -1,13 +1,13 @@
 {
-  "versionCode": 6,
-  "versionName": "1.0.5",
+  "versionCode": 7,
+  "versionName": "1.0.6",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.5/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.6/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Smart Mobile Web fallback when Wireless Debugging is off
-• Native Android container when Wireless Debugging is on
-• 100% Android mobile mode rendering
-• 🌐 Web Ready badges in App Selector",
+  "releaseNotes": "• Full Landscape & Horizontal Screen Orientation support
+• Perfect initial window fit in landscape (no clipping/cutting)
+• Horizontal resizing and scaling in landscape
+• Dynamic screen rotation bounds adaptation",
   "forceUpdate": false
 }
