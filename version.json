@@ -1,10 +1,10 @@
 {
-  "versionCode": 23,
-  "versionName": "1.2.9",
+  "versionCode": 24,
+  "versionName": "1.3.0",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.9/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.3.0/Orbis.apk",
   "apkSize": "2.7M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Native Android Permissions: Camera, Microphone, and Location now invoke official native Android permission dialogs (e.g. voice notes in WhatsApp, camera in Instagram)\n• Universal File & Media Attachments: Full support for <input type=\"file\"> with native Android File Picker, Gallery, Documents, and Camera ('Take photo') capture\n• Floating Browser & Popup OAuth Integration: All attachments and permissions seamlessly work across all floating web apps, secondary popups, and the browser\n• WebView Deadlock Prevention: Safe fallback unblocks file inputs immediately if picker is dismissed or cancelled",
+  "releaseNotes": "• Native Android Photo Picker & Gallery: Tapping image/photo upload in Instagram, WhatsApp, Discord, ChatGPT now opens your official Photos / Gallery instead of raw file manager\n• Smart Media Chooser: Seamlessly choose between Camera ('Take photo'), Gallery/Google Photos, and Files\n• Package Visibility Queries: Camera and Gallery apps now fully visible and resolvable on Android 11+\n• Official Native System Permissions: Official native Android permission dialogs for Camera, Microphone, and Location\n• Bug Fix: Removed restrictive CATEGORY_OPENABLE that was hiding Gallery apps",
   "forceUpdate": false
 }
