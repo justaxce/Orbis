@@ -1,10 +1,10 @@
 {
-  "versionCode": 18,
-  "versionName": "1.2.4",
+  "versionCode": 19,
+  "versionName": "1.2.5",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.4/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.5/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Added Native Freeform Floating Window multitasking via Shizuku\n• Fixed black popup screen and background app termination\n• Background app stays 100% active and undisturbed",
+  "releaseNotes": "• Pure Web Apps mode: only verified floating web apps shown\n• All apps open in Orbis traditional popup with full size & button controls\n• Removed bare system popups and complex setup",
   "forceUpdate": false
 }
