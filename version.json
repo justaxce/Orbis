@@ -1,12 +1,15 @@
 {
-  "versionCode": 2,
-  "versionName": "1.0.1",
+  "versionCode": 3,
+  "versionName": "1.0.2",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.1/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.2/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Fixed sidebar auto-restore when updating app or rebooting
-• Fixed setup guide dialog crash/glitch from floating window
-• Fixed keyboard not opening automatically on 1-tap in input fields",
+  "releaseNotes": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Redesigned Full-Width Update Dialog
+• Fixed Sidebar Auto-Restore on Reboot
+• Fixed Setup Guide Dialog from Overlay
+• Fixed 1-Tap Soft Keyboard Opening
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
   "forceUpdate": false
 }
