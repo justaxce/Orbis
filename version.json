@@ -1,10 +1,10 @@
 {
-  "versionCode": 11,
-  "versionName": "1.1.0",
+  "versionCode": 12,
+  "versionName": "1.1.1",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.1.0/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.1.1/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Automatic Landscape Window Adaptation: All popup browsers, web apps, and mini-tools automatically open in 16:9 widescreen format whenever the device or underlying app/game is in landscape mode\n• Seamless Widescreen Viewport: Proportional 16:9 aspect ratio centered comfortably on horizontal displays without narrow portrait letterboxing\n• Retains 1-tap manual 🔄 ratio toggle in window header bar for on-demand portrait switching",
+  "releaseNotes": "• Fixed native virtual display launch flag (--display) and exit code validation\n• Full gesture touch forwarding (taps, long presses, swipes, scrolling)\n• Seamless automatic Web fallback when native execution is unavailable\n• Repository keystore cleanup with 100% OTA update signature preservation",
   "forceUpdate": false
 }
