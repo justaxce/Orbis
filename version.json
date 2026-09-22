@@ -5,6 +5,6 @@
   "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.3/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Fixed Shizuku IPC binder connection and Virtual Display creation\n• Enabled native app launching without 'Setup Required' error\n• Added real-time Shizuku auto-reconnect and instant permission request",
+  "releaseNotes": "• Fixed Shizuku IPC binder connection and Virtual Display creation\n• Fixed in-app updater installer permissions\n• Added real-time Shizuku auto-reconnect",
   "forceUpdate": false
 }
