@@ -309,13 +309,18 @@
         </LinearLayout>
 
         <!-- Page 3: Settings -->
-        <LinearLayout
+        <ScrollView
             android:id="@+id/pageSettings"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp"
+            android:fillViewport="true"
             android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
             <!-- Edge Anchor -->
             <TextView
@@ -465,7 +470,153 @@
                     android:text="@string/btn_check_updates"
                     android:textSize="12sp" />
             </LinearLayout>
-        </LinearLayout>
+
+            <!-- Developer Info Card -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEVELOPER &amp; CREATOR"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_header"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="32dp">
+
+                <!-- Header Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- Avatar Badge -->
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="14dp">
+
+                        <View
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_status_badge"
+                            android:backgroundTint="#26DFC07A" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="A"
+                            android:textColor="@color/accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium" />
+                    </FrameLayout>
+
+                    <!-- Info Column -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:background="@drawable/bg_status_badge"
+                                android:backgroundTint="#1FDFC07A"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="2dp"
+                                android:text="Creator"
+                                android:textColor="@color/accent"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Discord: @zx.fy • ID: 1316335421394780262"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="infernodev.fun"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="@color/border" />
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Button 1: Visit Portfolio -->
+                    <Button
+                        android:id="@+id/btnVisitPortfolio"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="🌐 Portfolio"
+                        android:textColor="@color/accent"
+                        android:textSize="12sp"
+                        app:strokeColor="@color/accent" />
+
+                    <!-- Button 2: Message on Discord -->
+                    <Button
+                        android:id="@+id/btnMessageDiscord"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="💬 Discord"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:backgroundTint="#5865F2" />
+                </LinearLayout>
+            </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
     </FrameLayout>
 
     <View
@@ -513,18 +664,12 @@
                 android:layout_height="96dp"
                 android:layout_marginBottom="18dp">
 
-                <View
-                    android:layout_width="88dp"
-                    android:layout_height="88dp"
-                    android:layout_gravity="center"
-                    android:background="@drawable/bg_status_badge"
-                    android:backgroundTint="#1FDFC07A" />
-
                 <ImageView
                     android:id="@+id/ivSplashLogo"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
                     android:layout_gravity="center"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/ic_orbis_logo"
                     android:contentDescription="Orbis Logo" />
             </FrameLayout>

@@ -1,6 +1,9 @@
 package com.floating.virtualwindow
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -77,6 +80,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvAppVersionDisplay: TextView
     private lateinit var tvAppVersionStatus: TextView
     private lateinit var btnCheckUpdates: Button
+    private lateinit var btnVisitPortfolio: Button
+    private lateinit var btnMessageDiscord: Button
 
     private val overlayPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -148,6 +153,8 @@ class MainActivity : AppCompatActivity() {
         tvAppVersionDisplay = findViewById(R.id.tvAppVersionDisplay)
         tvAppVersionStatus = findViewById(R.id.tvAppVersionStatus)
         btnCheckUpdates = findViewById(R.id.btnCheckUpdates)
+        btnVisitPortfolio = findViewById(R.id.btnVisitPortfolio)
+        btnMessageDiscord = findViewById(R.id.btnMessageDiscord)
 
         tvAppVersionDisplay.text = getString(R.string.app_version_label, updateManager.getCurrentVersionName())
 
@@ -251,6 +258,42 @@ class MainActivity : AppCompatActivity() {
 
         btnCheckUpdates.setOnClickListener {
             checkUpdateManual()
+        }
+
+        btnVisitPortfolio.setOnClickListener {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.infernodev.fun/")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Opening portfolio: https://www.infernodev.fun/", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnMessageDiscord.setOnClickListener {
+            val discordUserId = "1316335421394780262"
+            val discordUsername = "zx.fy"
+
+            // Copy Discord username to clipboard for instant convenience
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("Discord Username", discordUsername))
+            Toast.makeText(this, "Discord: @$discordUsername (Copied to clipboard)", Toast.LENGTH_SHORT).show()
+
+            // Open Discord profile / DM (redirects to Discord app if installed, else web browser)
+            try {
+                val discordIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.com/users/$discordUserId")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(discordIntent)
+            } catch (e: Exception) {
+                try {
+                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.com/users/$discordUserId"))
+                    startActivity(webIntent)
+                } catch (ex: Exception) {
+                    Toast.makeText(this, "Discord: @$discordUsername", Toast.LENGTH_LONG).show()
+                }
+            }
         }
 
         etSearchApps.addTextChangedListener(object : TextWatcher {
