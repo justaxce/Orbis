@@ -638,24 +638,46 @@ class FloatingWindowView(
         }
     }
 
+    /**
+     * Strictly bounds and centers the window within the visible screen dimensions.
+     * Prevents window dimensions or right-edge controls (Close, Minimize) from ever being pushed off-screen.
+     */
+    private fun clampWindowToScreen(screenWidth: Int, screenHeight: Int, isLandscape: Boolean) {
+        val maxSafeW = (screenWidth * 0.94).toInt()
+        val maxSafeH = (screenHeight * (if (isLandscape) 0.88 else 0.82)).toInt()
+
+        if (isLandscapeRatio) {
+            // 16:9 widescreen mode: bounded primarily by maxSafeW
+            val targetW = min(maxSafeW, (maxSafeH * ASPECT_RATIO_16_9).toInt())
+            val targetH = (targetW / ASPECT_RATIO_16_9).toInt()
+            layoutParams.width = targetW.coerceIn(280, maxSafeW)
+            layoutParams.height = targetH.coerceIn(200, maxSafeH)
+        } else {
+            // 9:16 portrait mode: bounded primarily by maxSafeH
+            val targetH = min(maxSafeH, (maxSafeW / ASPECT_RATIO_9_16).toInt())
+            val targetW = (targetH * ASPECT_RATIO_9_16).toInt()
+            layoutParams.height = targetH.coerceIn(320, maxSafeH)
+            layoutParams.width = targetW.coerceIn(200, maxSafeW)
+        }
+
+        // Hard guarantee: width and height NEVER exceed screen boundaries
+        layoutParams.width = layoutParams.width.coerceIn(200, maxSafeW)
+        layoutParams.height = layoutParams.height.coerceIn(200, maxSafeH)
+
+        val maxX = max(0, screenWidth - layoutParams.width)
+        val maxY = max(0, screenHeight - layoutParams.height)
+        layoutParams.x = ((screenWidth - layoutParams.width) / 2).coerceIn(0, maxX)
+        layoutParams.y = ((screenHeight - layoutParams.height) / 2).coerceIn(0, maxY)
+    }
+
     fun show() {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
-        val isLandscape = screenWidth > screenHeight
+        val isLandscape = screenWidth > screenHeight ||
+                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        val maxSafeH = (screenHeight * (if (isLandscape) 0.88 else 0.82)).toInt()
-        val maxSafeW = min((screenWidth * 0.94).toInt(), (maxSafeH * currentAspectRatio).toInt())
-
-        if (layoutParams.height > maxSafeH || layoutParams.width > maxSafeW || layoutParams.height < 200) {
-            layoutParams.height = maxSafeH
-            layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
-        }
-
-        val maxX = max(0, screenWidth - layoutParams.width)
-        val maxY = max(0, screenHeight - layoutParams.height)
-        layoutParams.x = layoutParams.x.coerceIn(0, maxX)
-        layoutParams.y = layoutParams.y.coerceIn(0, maxY)
+        clampWindowToScreen(screenWidth, screenHeight, isLandscape)
 
         if (view.parent == null) {
             try {
@@ -670,38 +692,23 @@ class FloatingWindowView(
 
     /**
      * Called when the device orientation changes (Portrait <-> Landscape).
-     * Re-clamps window dimensions and coordinates so it never clips or overflows the screen.
+     * Automatically adapts aspect ratio to new orientation and ensures window is perfectly clamped.
      */
     fun handleOrientationChanged() {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
-        val isLandscape = screenWidth > screenHeight
+        val isScreenLandscape = screenWidth > screenHeight ||
+                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        val maxSafeH = (screenHeight * (if (isLandscape) 0.86 else 0.80)).toInt()
-        val maxSafeW = min((screenWidth * 0.94).toInt(), (maxSafeH * currentAspectRatio).toInt())
-
-        if (isLandscape) {
-            if (layoutParams.height > maxSafeH) {
-                layoutParams.height = maxSafeH
-                layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
-            }
-            layoutParams.x = ((screenWidth - layoutParams.width) / 2).coerceIn(0, max(0, screenWidth - layoutParams.width))
-            layoutParams.y = ((screenHeight - layoutParams.height) / 2).coerceIn(0, max(0, screenHeight - layoutParams.height))
+        if (isLandscapeRatio != isScreenLandscape) {
+            applyAspectRatio(isScreenLandscape)
         } else {
-            if (layoutParams.height > maxSafeH || layoutParams.width > maxSafeW) {
-                layoutParams.height = maxSafeH
-                layoutParams.width = (maxSafeH * currentAspectRatio).toInt()
-            }
-            val maxX = max(0, screenWidth - layoutParams.width)
-            val maxY = max(0, screenHeight - layoutParams.height)
-            layoutParams.x = layoutParams.x.coerceIn(0, maxX)
-            layoutParams.y = layoutParams.y.coerceIn(0, maxY)
+            clampWindowToScreen(screenWidth, screenHeight, isScreenLandscape)
+            virtualDisplayManager.resize(layoutParams.width, layoutParams.height, 320)
+            touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
+            updateLayout()
         }
-
-        virtualDisplayManager.resize(layoutParams.width, layoutParams.height, 320)
-        touchForwarder.updateDimensions(layoutParams.width, layoutParams.height, layoutParams.width, layoutParams.height)
-        updateLayout()
     }
 
     /**
@@ -721,8 +728,20 @@ class FloatingWindowView(
 
     /**
      * Restores the minimized window without reloading or losing state.
+     * Automatically adapts aspect ratio if screen orientation changed while in bubble.
      */
     fun restore() {
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val isScreenLandscape = screenWidth > screenHeight ||
+                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscapeRatio != isScreenLandscape) {
+            applyAspectRatio(isScreenLandscape)
+        } else {
+            clampWindowToScreen(screenWidth, screenHeight, isScreenLandscape)
+        }
         show()
     }
 
