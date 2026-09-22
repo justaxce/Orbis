@@ -1,10 +1,10 @@
 {
-  "versionCode": 22,
-  "versionName": "1.2.8",
+  "versionCode": 23,
+  "versionName": "1.2.9",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.8/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.9/Orbis.apk",
   "apkSize": "2.7M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Browser & App Theme: now dynamically follows phone's default theme (Day/Night Mode)\n• System Language Integration: browser requests and webpages now match phone's default language\n• Soft Keyboard Auto-Lift: window smoothly glides upward when typing so input field is never covered\n• Unread Notification Red Dot: floating bubble shows a vibrant red dot badge when web apps receive notifications\n• Real Brand Icons: bundled official icons for 50+ Web Apps even if not installed",
+  "releaseNotes": "• Native Android Permissions: Camera, Microphone, and Location now invoke official native Android permission dialogs (e.g. voice notes in WhatsApp, camera in Instagram)\n• Universal File & Media Attachments: Full support for <input type=\"file\"> with native Android File Picker, Gallery, Documents, and Camera ('Take photo') capture\n• Floating Browser & Popup OAuth Integration: All attachments and permissions seamlessly work across all floating web apps, secondary popups, and the browser\n• WebView Deadlock Prevention: Safe fallback unblocks file inputs immediately if picker is dismissed or cancelled",
   "forceUpdate": false
 }
