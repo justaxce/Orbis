@@ -1,10 +1,10 @@
 {
-  "versionCode": 10,
-  "versionName": "1.0.9",
+  "versionCode": 11,
+  "versionName": "1.1.0",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.9/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.1.0/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Added ✕ (Clear/Stop) and 🔄 (Reload) buttons to the browser search bar\n• Unified cross-app WebApp backend: Shared Google login (SSO), third-party cookies & OAuth popup support\n• Completely hidden, device-local SQLite browsing history (orbis_browser_history.db)\n• Automatic sidebar edge handle auto-restart after in-app updates",
+  "releaseNotes": "• Automatic Landscape Window Adaptation: All popup browsers, web apps, and mini-tools automatically open in 16:9 widescreen format whenever the device or underlying app/game is in landscape mode\n• Seamless Widescreen Viewport: Proportional 16:9 aspect ratio centered comfortably on horizontal displays without narrow portrait letterboxing\n• Retains 1-tap manual 🔄 ratio toggle in window header bar for on-demand portrait switching",
   "forceUpdate": false
 }
