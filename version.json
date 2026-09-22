@@ -1,14 +1,14 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
+  "versionCode": 4,
+  "versionName": "1.0.3",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.2/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.0.3/Orbis.apk",
   "apkSize": "1.9M",
   "releaseDate": "2026-09-22",
   "releaseNotes": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Added Luxury Loading Splash Screen
+• Smooth Entrance & Workspace Preloading
 • Redesigned Full-Width Update Dialog
-• Fixed Sidebar Auto-Restore on Reboot
-• Fixed Setup Guide Dialog from Overlay
 • Fixed 1-Tap Soft Keyboard Opening
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
   "forceUpdate": false
