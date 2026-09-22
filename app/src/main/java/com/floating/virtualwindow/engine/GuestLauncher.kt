@@ -39,41 +39,42 @@ object GuestLauncher {
     fun launchApp(
         context: Context,
         packageName: String,
-        targetDisplayId: Int,
+        targetDisplayId: Int = 0,
         onWebFallbackRequested: ((String, String) -> Unit)? = null
     ): Boolean {
-        // If Shizuku / Wireless Debugging is active and we have a valid virtual display, attempt real native launch
-        if (targetDisplayId > 0 && isShizukuAvailable()) {
-            val launched = launchViaShizuku(context, packageName, targetDisplayId)
+        // 1. If Shizuku is active, launch real native app in Freeform Floating Window Mode
+        if (isShizukuAvailable()) {
+            val launched = launchViaFreeformShizuku(context, packageName)
             if (launched) return true
         }
 
-        // Native launch unavailable or failed -> check if app has a web fallback
+        // 2. Native launch unavailable or failed -> check if app has a web fallback
         val webInfo = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
         if (webInfo != null) {
             onWebFallbackRequested?.invoke(webInfo.title, webInfo.url)
             return true
         }
 
-        // Secondary fallback: Freeform / Pop-up view mode if supported
+        // 3. Secondary fallback: Native Freeform / Pop-up view mode if supported
         val launchedFreeform = FreeformLauncher.launchAppInFreeform(context, packageName)
         if (launchedFreeform) return true
 
-        // Do not substitute with a fake GuestStubActivity; return false so the caller
-        // can gracefully route to Web or guide the user
         return false
     }
 
-    private fun launchViaShizuku(context: Context, packageName: String, displayId: Int): Boolean {
-        if (displayId <= 0) return false
+    fun launchViaFreeformShizuku(context: Context, packageName: String): Boolean {
         return try {
             val pm = context.packageManager
             val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
             val component = launchIntent.component ?: return false
             val componentName = component.flattenToString()
 
-            // Correct Android am syntax: --display <id>
-            val cmd = "am start --display $displayId -n $componentName"
+            // 1. Enable freeform windowing support and force resizable activities globally via privileged shell
+            // 2. Launch in windowingMode 5 (freeform) with FLAG_ACTIVITY_NEW_TASK (0x10000000) and FLAG_ACTIVITY_MULTIPLE_TASK (0x08000000) = 0x18000000
+            val enableCmd = "settings put global enable_freeform_support 1; settings put secure force_resizable_activities 1"
+            val launchCmd = "am start --windowingMode 5 -f 0x18000000 -n $componentName"
+            val fullCmd = "$enableCmd; $launchCmd"
+
             val method = Shizuku::class.java.getDeclaredMethod(
                 "newProcess",
                 Array<String>::class.java,
@@ -81,7 +82,7 @@ object GuestLauncher {
                 String::class.java
             ).apply { isAccessible = true }
 
-            val process = method.invoke(null, arrayOf("sh", "-c", cmd), null, null) as? Process
+            val process = method.invoke(null, arrayOf("sh", "-c", fullCmd), null, null) as? Process
                 ?: return false
 
             val completed = process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)
@@ -98,7 +99,6 @@ object GuestLauncher {
                 return false
             }
 
-            // Verify stdout/stderr for known failure tokens
             if (stdout.contains("Error:") || stdout.contains("Exception") ||
                 stderr.contains("Error:") || stderr.contains("Exception") || stderr.contains("Permission Denial")) {
                 return false

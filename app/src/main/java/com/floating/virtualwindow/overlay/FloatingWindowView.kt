@@ -468,27 +468,44 @@ class FloatingWindowView(
         // Automatically open in landscape if device is landscape OR if it's a landscape app
         applyAspectRatio(isScreenLandscape || isAppLandscape)
 
-        // 1. If Wireless Debugging (Shizuku) is active, attempt to launch real native app in Virtual Display
-        if (GuestLauncher.isShizukuAvailable()) {
-            setupVirtualDisplay(packageName, appName, icon)
+        // 1. Check if user is in Zero Setup (Web) mode and app has a web version
+        val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
+        if (preferencesManager.engineMode == PreferencesManager.MODE_ZERO_SETUP && webFallback != null) {
+            openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
             return
         }
 
-        // 1b. If Shizuku is running but Orbis lacks permission, prompt immediately
+        // 2. If Shizuku is active, launch real native app in Freeform Floating Window Mode!
+        if (GuestLauncher.isShizukuAvailable()) {
+            val launched = GuestLauncher.launchViaFreeformShizuku(context, packageName)
+            if (launched) {
+                close()
+                Toast.makeText(context, "$appName opened in floating window", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+
+        // 2b. If Shizuku is running but Orbis lacks permission, prompt immediately
         if (GuestLauncher.isShizukuRunningWithoutPermission()) {
             GuestLauncher.requestShizukuPermission()
             Toast.makeText(context, "Grant Shizuku permission to open $appName", Toast.LENGTH_LONG).show()
         }
 
-        // 2. Wireless Debugging is NOT active -> Automatically fallback to Web app if available
-        val webFallback = com.floating.virtualwindow.data.WebAppCatalog.resolveWebApp(context, packageName)
+        // 3. Fallback to Web version if available
         if (webFallback != null) {
-            Toast.makeText(context, "Native mode unavailable · Using Web", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Using Web mode for $appName", Toast.LENGTH_SHORT).show()
             openBrowser(webFallback.url, appName, icon = icon, asDesktop = webFallback.asDesktop, forceRatioCheck = false)
             return
         }
 
-        // 3. No Web fallback available (offline app, camera, system settings) -> Show Setup Required
+        // 4. Secondary fallback: native system Freeform (e.g. Samsung Pop-up view / Stock Freeform)
+        val launchedFreeform = com.floating.virtualwindow.engine.FreeformLauncher.launchAppInFreeform(context, packageName)
+        if (launchedFreeform) {
+            close()
+            return
+        }
+
+        // 5. No web version and no freeform available -> Show Setup Required in Orbis window
         showSetupRequired(packageName, appName)
     }
 
@@ -506,6 +523,7 @@ class FloatingWindowView(
     }
 
     private fun showSetupRequired(packageName: String, appName: String) {
+        show()
         cleanContent()
         val setupView = LayoutInflater.from(context).inflate(R.layout.view_setup_required, contentContainer, false)
         val tvTitle = setupView.findViewById<TextView>(R.id.tvSetupRequiredTitle)
@@ -589,6 +607,7 @@ class FloatingWindowView(
         asDesktop: Boolean = false,
         forceRatioCheck: Boolean = true
     ) {
+        show()
         tvHeaderTitle.text = title
         if (icon != null) {
             ivHeaderIcon.setImageDrawable(icon)
@@ -614,6 +633,7 @@ class FloatingWindowView(
     }
 
     fun openCalculator() {
+        show()
         tvHeaderTitle.text = "Calculator"
         ivHeaderIcon.setImageResource(R.drawable.ic_calculator)
         cleanContent()

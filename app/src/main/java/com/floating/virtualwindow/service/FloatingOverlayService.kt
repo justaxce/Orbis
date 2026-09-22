@@ -107,7 +107,6 @@ class FloatingOverlayService : Service() {
             onAppSelected = { packageName, appName, icon ->
                 lastAppIcon = icon
                 floatingBubbleView?.setIcon(icon)
-                floatingWindowView?.show()
                 floatingWindowView?.launchAppInWindow(packageName, appName, icon)
             },
             onToolBrowserSelected = {
