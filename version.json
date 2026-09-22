@@ -1,10 +1,10 @@
 {
-  "versionCode": 15,
-  "versionName": "1.2.1",
+  "versionCode": 16,
+  "versionName": "1.2.2",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.1/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.2.2/Orbis.apk",
   "apkSize": "2.2M",
   "releaseDate": "2026-09-22",
-  "releaseNotes": "• Added 1-tap Desktop Site toggle button in browser URL bar\n• Enabled pinch-to-zoom & horizontal scrolling for WhatsApp Web, desktop pages, and wide code blocks\n• Added Outside Tap Auto-Minimize toggle in Settings (automatically collapses window into bubble when tapping outside)",
+  "releaseNotes": "• Fixed orientation-aware restore from floating bubble (auto-adapts ratio when rotated between landscape and portrait)\n• Hard-clamped window dimensions to prevent off-screen expansion and missing header buttons\n• Centered window placement on orientation flip",
   "forceUpdate": false
 }
