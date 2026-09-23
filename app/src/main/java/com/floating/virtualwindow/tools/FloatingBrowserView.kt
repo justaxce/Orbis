@@ -171,10 +171,18 @@ class FloatingBrowserView @JvmOverloads constructor(
                 val urlStr = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
 
                 // Feature 4: Media Sniffer URL detection
-                if (MediaDownloadHelper.isMediaUrl(urlStr)) {
+                val isAudioOnly = urlStr.contains("dash-audio", ignoreCase = true) ||
+                        urlStr.contains("/audio/", ignoreCase = true) ||
+                        urlStr.contains("_a.mp4", ignoreCase = true) ||
+                        urlStr.contains("audio_", ignoreCase = true)
+                val isInitSegment = urlStr.contains("init", ignoreCase = true)
+
+                if (MediaDownloadHelper.isMediaUrl(urlStr) && !isInitSegment) {
                     post {
-                        currentDetectedMediaUrl = urlStr
-                        btnDownloadMedia.visibility = View.VISIBLE
+                        if (currentDetectedMediaUrl == null || !isAudioOnly) {
+                            currentDetectedMediaUrl = urlStr
+                            btnDownloadMedia.visibility = View.VISIBLE
+                        }
                     }
                 }
 
@@ -192,6 +200,7 @@ class FloatingBrowserView @JvmOverloads constructor(
                 clearSelection()
                 currentDetectedMediaUrl = null
                 btnDownloadMedia.visibility = View.GONE
+                injectBackgroundAudioKeepAlive()
                 if (preferencesManager.isAdBlockEnabled) {
                     webView.evaluateJavascript(AdBlockEngine.getCosmeticAdHidingScript(), null)
                 }
@@ -348,11 +357,42 @@ class FloatingBrowserView @JvmOverloads constructor(
         }
 
         btnDownloadMedia.setOnClickListener {
-            val url = currentDetectedMediaUrl
-            if (!url.isNullOrBlank()) {
-                MediaDownloadHelper.downloadMedia(context, url, webView.title)
-            } else {
-                Toast.makeText(context, "No media detected", Toast.LENGTH_SHORT).show()
+            val jsQuery = """
+                (function() {
+                    var vids = document.querySelectorAll('video');
+                    for (var i = 0; i < vids.length; i++) {
+                        var v = vids[i];
+                        if (!v.paused || v.currentTime > 0) {
+                            var s = v.currentSrc || v.src;
+                            if (s && s.indexOf('http') === 0) return s;
+                        }
+                    }
+                    if (vids.length > 0) {
+                        var s = vids[0].currentSrc || vids[0].src;
+                        if (s && s.indexOf('http') === 0) return s;
+                    }
+                    return '';
+                })();
+            """.trimIndent()
+            webView.evaluateJavascript(jsQuery) { domMediaUrl ->
+                val cleanedDomUrl = domMediaUrl?.trim('"', ' ', '\\', '\n', '\r')
+                val targetUrl = if (!cleanedDomUrl.isNullOrBlank() && cleanedDomUrl != "null" && cleanedDomUrl.startsWith("http")) {
+                    cleanedDomUrl
+                } else {
+                    currentDetectedMediaUrl
+                }
+
+                if (!targetUrl.isNullOrBlank()) {
+                    MediaDownloadHelper.downloadMedia(
+                        context = context,
+                        rawMediaUrl = targetUrl,
+                        pageTitle = webView.title,
+                        webUserAgent = webView.settings.userAgentString,
+                        pageUrl = webView.url
+                    )
+                } else {
+                    Toast.makeText(context, "No media detected", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -933,18 +973,70 @@ class FloatingBrowserView @JvmOverloads constructor(
         if (!preferencesManager.isBackgroundAudioEnabled) return
         val js = """
             (function() {
+                if (window.__orbis_bg_keepalive_injected) return;
+                window.__orbis_bg_keepalive_injected = true;
+
                 try {
                     Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });
                     Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });
-                    window.addEventListener('visibilitychange', function(e) {
-                        e.stopImmediatePropagation();
-                    }, true);
-                    window.addEventListener('blur', function(e) {
-                        e.stopImmediatePropagation();
-                    }, true);
+                    Object.defineProperty(document, 'webkitVisibilityState', { get: function() { return 'visible'; }, configurable: true });
+                    Object.defineProperty(document, 'hasFocus', { value: function() { return true; }, configurable: true });
+                } catch(e) {}
+
+                try {
+                    var origDocAdd = document.addEventListener;
+                    document.addEventListener = function(type, listener, options) {
+                        if (type === 'visibilitychange' || type === 'webkitvisibilitychange') {
+                            return;
+                        }
+                        return origDocAdd.call(document, type, listener, options);
+                    };
+
+                    var origWinAdd = window.addEventListener;
+                    window.addEventListener = function(type, listener, options) {
+                        if (type === 'visibilitychange' || type === 'webkitvisibilitychange' || type === 'pagehide') {
+                            return;
+                        }
+                        return origWinAdd.call(window, type, listener, options);
+                    };
+
+                    var origPause = HTMLMediaElement.prototype.pause;
+                    HTMLMediaElement.prototype.pause = function() {
+                        if (window.__orbis_is_minimized) {
+                            return;
+                        }
+                        return origPause.apply(this, arguments);
+                    };
                 } catch(e) {}
             })();
         """.trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
+
+    fun setMinimizedState(minimized: Boolean) {
+        if (!preferencesManager.isBackgroundAudioEnabled) return
+        val js = if (minimized) {
+            """
+            (function() {
+                window.__orbis_is_minimized = true;
+                try {
+                    var vids = document.querySelectorAll('video, audio');
+                    for (var i = 0; i < vids.length; i++) {
+                        var v = vids[i];
+                        if (v.currentTime > 0 && v.paused && !v.ended) {
+                            v.play().catch(function(){});
+                        }
+                    }
+                } catch(e) {}
+            })();
+            """.trimIndent()
+        } else {
+            """
+            (function() {
+                window.__orbis_is_minimized = false;
+            })();
+            """.trimIndent()
+        }
         webView.evaluateJavascript(js, null)
     }
 

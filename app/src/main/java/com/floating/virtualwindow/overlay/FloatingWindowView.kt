@@ -162,6 +162,11 @@ class FloatingWindowView(
 
     private fun setupOutsideTouchListener() {
         view.setOnTouchListener { _, event ->
+            if (isGhostMode) {
+                // In Ghost Mode, clicks intentionally pass through to apps underneath!
+                // NEVER minimize when in Ghost Mode.
+                return@setOnTouchListener false
+            }
             if (event.action == MotionEvent.ACTION_OUTSIDE) {
                 if (preferencesManager.autoMinimizeOnOutsideTap) {
                     onMinimizeRequested()
@@ -392,13 +397,15 @@ class FloatingWindowView(
         if (isGhostMode == enabled) return
         isGhostMode = enabled
         if (enabled) {
-            layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            layoutParams.flags = (layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE) and
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
             layoutParams.alpha = 0.50f
             ghostExitPill?.show()
             btnGhostMode.setColorFilter(android.graphics.Color.parseColor("#818CF8"))
             Toast.makeText(context, "Ghost Mode: Click-through active. Tap top pill to exit.", Toast.LENGTH_SHORT).show()
         } else {
-            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+            layoutParams.flags = (layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()) or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
             layoutParams.alpha = 1.0f
             ghostExitPill?.hide()
             btnGhostMode.setColorFilter(null)
@@ -792,6 +799,11 @@ class FloatingWindowView(
         currentSurfaceView = null
         virtualDisplayManager.release()
         contentContainer.removeAllViews()
+        savedWidth = 0
+        savedHeight = 0
+        savedX = 0
+        savedY = 0
+        isMinimized = false
         setWindowFocusable(false)
     }
 
@@ -839,6 +851,20 @@ class FloatingWindowView(
 
     fun show() {
         isMinimized = false
+        if (savedWidth > 0 && savedHeight > 0) {
+            layoutParams.width = savedWidth
+            layoutParams.height = savedHeight
+            layoutParams.x = savedX
+            layoutParams.y = savedY
+        }
+        layoutParams.flags = layoutParams.flags and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv() and
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        layoutParams.flags = layoutParams.flags or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
@@ -846,6 +872,7 @@ class FloatingWindowView(
                 context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
         clampWindowToScreen(screenWidth, screenHeight, isLandscape)
+        currentBrowserView?.setMinimizedState(false)
 
         if (view.parent == null) {
             try {
@@ -889,13 +916,18 @@ class FloatingWindowView(
 
     /**
      * Non-destructive hide for minimizing into a bubble.
-     * Preserves the active WebView, scroll position, and running session intact.
+     * Preserves the active WebView, scroll position, audio/video playback, and running session intact.
      */
     fun minimize() {
         if (isGhostMode) {
             setGhostMode(false)
         }
         isMinimized = true
+        savedWidth = layoutParams.width
+        savedHeight = layoutParams.height
+        savedX = layoutParams.x
+        savedY = layoutParams.y
+
         if (isKeyboardShifted) {
             keyboardAnimator?.cancel()
             layoutParams.y = preKeyboardY
@@ -903,9 +935,18 @@ class FloatingWindowView(
             isKeyboardShifted = false
         }
         setWindowFocusable(false)
+        currentBrowserView?.setMinimizedState(true)
+
         if (view.parent != null) {
             try {
-                windowManager.removeView(view)
+                layoutParams.width = 1
+                layoutParams.height = 1
+                layoutParams.x = -10000
+                layoutParams.y = -10000
+                layoutParams.flags = layoutParams.flags or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                windowManager.updateViewLayout(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -924,12 +965,38 @@ class FloatingWindowView(
         val isScreenLandscape = screenWidth > screenHeight ||
                 context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+        if (savedWidth > 0 && savedHeight > 0) {
+            layoutParams.width = savedWidth
+            layoutParams.height = savedHeight
+            layoutParams.x = savedX
+            layoutParams.y = savedY
+        }
+
+        layoutParams.flags = layoutParams.flags and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv() and
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        layoutParams.flags = layoutParams.flags or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+
         if (isLandscapeRatio != isScreenLandscape) {
             applyAspectRatio(isScreenLandscape)
         } else {
             clampWindowToScreen(screenWidth, screenHeight, isScreenLandscape)
         }
-        show()
+
+        currentBrowserView?.setMinimizedState(false)
+
+        if (view.parent == null) {
+            try {
+                windowManager.addView(view, layoutParams)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            updateLayout()
+        }
     }
 
     /**

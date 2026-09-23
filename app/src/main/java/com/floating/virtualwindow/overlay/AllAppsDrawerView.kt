@@ -9,19 +9,24 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.AppInfo
 import com.floating.virtualwindow.data.AppRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -32,10 +37,14 @@ class AllAppsDrawerView(
     private val onAppSelected: (packageName: String, appName: String, icon: Drawable?) -> Unit
 ) {
 
-    val view: View = LayoutInflater.from(context).inflate(R.layout.view_all_apps_drawer, null)
+    private val themedContext = ContextThemeWrapper(context, R.style.Theme_FloatingVirtualWindow)
+    val view: View = LayoutInflater.from(themedContext).inflate(R.layout.view_all_apps_drawer, null)
     private val layoutParams: WindowManager.LayoutParams
-    private val appRepository = AppRepository(context)
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val appRepository = AppRepository(themedContext)
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        throwable.printStackTrace()
+    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + coroutineExceptionHandler)
 
     private val etSearch: EditText = view.findViewById(R.id.etSearchAllApps)
     private val rvAllApps: RecyclerView = view.findViewById(R.id.rvAllApps)
@@ -53,21 +62,24 @@ class AllAppsDrawerView(
         }
 
         val displayMetrics = context.resources.displayMetrics
-        val drawerWidth = (displayMetrics.widthPixels * 0.85).toInt().coerceAtMost(480)
-        val drawerHeight = (displayMetrics.heightPixels * 0.65).toInt().coerceAtMost(650)
+        val density = displayMetrics.density
+        val drawerWidth = (displayMetrics.widthPixels * 0.88).toInt().coerceIn((280 * density).toInt(), (400 * density).toInt())
+        val drawerHeight = (displayMetrics.heightPixels * 0.70).toInt().coerceIn((360 * density).toInt(), (600 * density).toInt())
 
         layoutParams = WindowManager.LayoutParams(
             drawerWidth,
             drawerHeight,
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         }
 
-        rvAllApps.layoutManager = GridLayoutManager(context, 4)
+        rvAllApps.layoutManager = GridLayoutManager(themedContext, 4)
         adapter = AllAppsAdapter()
         rvAllApps.adapter = adapter
 
@@ -76,11 +88,28 @@ class AllAppsDrawerView(
         }
 
         view.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_OUTSIDE) {
+            if (event.action == MotionEvent.ACTION_OUTSIDE) {
                 hide()
                 true
             } else {
                 false
+            }
+        }
+
+        etSearch.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                setWindowFocusable(true)
+            }
+            false
+        }
+
+        etSearch.setOnFocusChangeListener { _, hasFocus ->
+            setWindowFocusable(hasFocus)
+            if (hasFocus) {
+                etSearch.postDelayed({
+                    val imm = themedContext.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                    imm?.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT)
+                }, 100)
             }
         }
 
@@ -91,6 +120,21 @@ class AllAppsDrawerView(
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    private fun setWindowFocusable(focusable: Boolean) {
+        if (focusable) {
+            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        } else {
+            layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        }
+        if (view.parent != null) {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun filterApps(query: String) {
@@ -110,22 +154,27 @@ class AllAppsDrawerView(
 
     fun show() {
         scope.launch {
-            val apps = appRepository.getInstalledApps()
-            withContext(Dispatchers.Main) {
+            try {
+                val apps = withContext(Dispatchers.IO) {
+                    appRepository.getInstalledApps()
+                }
                 allAppsList = apps
                 filterApps(etSearch.text.toString())
                 if (view.parent == null) {
-                    try {
-                        windowManager.addView(view, layoutParams)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    windowManager.addView(view, layoutParams)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     fun hide() {
+        setWindowFocusable(false)
+        val imm = themedContext.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(etSearch.windowToken, 0)
+        etSearch.clearFocus()
+
         if (view.parent != null) {
             try {
                 windowManager.removeView(view)
@@ -143,14 +192,14 @@ class AllAppsDrawerView(
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
-            val v = LayoutInflater.from(context).inflate(R.layout.item_sidebar_app, parent, false)
+            val v = LayoutInflater.from(themedContext).inflate(R.layout.item_sidebar_app, parent, false)
             return AppViewHolder(v)
         }
 
         override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
             val app = filteredList[position]
             holder.tvName.text = app.appName
-            val displayIcon = app.icon ?: com.floating.virtualwindow.data.WebIconHelper.getIconForApp(context, app.appName, app.packageName)
+            val displayIcon = app.icon ?: com.floating.virtualwindow.data.WebIconHelper.getIconForApp(themedContext, app.appName, app.packageName)
             holder.ivIcon.setImageDrawable(displayIcon)
 
             holder.itemView.setOnClickListener {
