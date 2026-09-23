@@ -1,10 +1,10 @@
 {
-  "versionCode": 25,
-  "versionName": "1.3.1",
+  "versionCode": 26,
+  "versionName": "1.4.0",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.3.1/Orbis.apk",
+  "apkUrl": "https://github.com/justaxce/Orbis/releases/download/v1.4.0/Orbis.apk",
   "apkSize": "2.7M",
   "releaseDate": "2026-09-23",
-  "releaseNotes": "• Anti-Task-Kill & Recents Swipe Protection: Swiping Orbis from the Recent Apps screen will no longer kill the floating sidebar handle\n• Overlay Watchdog Keep-Alive: Added auto-resurrection watchdog that brings the edge handle back within 500ms if ever killed by system Low Memory Killer\n• 1-Tap Battery Saver Exemption: Prompt and Settings card to allow 'Unrestricted' background battery usage so Android doesn't kill the sidebar in Doze mode\n• Foreground Notification Hardening: Notification channel upgraded with 'Restart Handle' action for instant recovery\n• Safe Edge Handle Attachment: Improved edge handle view attachment safeguards across screen orientation and display lock events",
+  "releaseNotes": "• 🛡️ Built-in AdBlocker & Privacy Shield: Blocks intrusive ads, video popups, and trackers in floating browser. One-tap shield toggle in URL bar.\n• 🎵 Background Audio Playback: Play YouTube videos, podcasts, and web music in background even when window is minimized to bubble or screen is locked.\n• 👻 Ghost Mode (Click-Through Overlay): Semi-transparent window allows all touches to pass through directly to underlying games or apps, with a floating top pill to exit anytime.\n• 📥 Media & Video Downloader: Automatically sniffs video/audio playback on web pages with a 1-tap download button saving directly to system Downloads and Gallery.\n• 🪟 Dual Floating Windows: Support for opening multiple independent floating windows simultaneously for true dual multitasking.\n• 🔦 Sidebar Flashlight Tool: 1-tap torch toggle directly from the floating sidebar dock.\n• 📱 All-Apps Floating Launcher: Search and launch ANY installed Android app into a floating window directly from the sidebar.",
   "forceUpdate": false
 }
