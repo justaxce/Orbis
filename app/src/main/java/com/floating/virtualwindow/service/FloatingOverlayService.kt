@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -22,6 +23,7 @@ import com.floating.virtualwindow.overlay.EdgeHandleView
 import com.floating.virtualwindow.overlay.FloatingBubbleView
 import com.floating.virtualwindow.overlay.FloatingWindowView
 import com.floating.virtualwindow.overlay.SidebarDockView
+import com.floating.virtualwindow.receiver.OverlayWatchdogReceiver
 import rikka.shizuku.Shizuku
 
 class FloatingOverlayService : Service() {
@@ -62,7 +64,7 @@ class FloatingOverlayService : Service() {
             val channel = NotificationChannel(
                 channelId,
                 "Floating Sidebar Service",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Keeps the floating sidebar active over any application"
                 setShowBadge(false)
@@ -79,12 +81,25 @@ class FloatingOverlayService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val restartIntent = Intent(this, FloatingOverlayService::class.java).apply {
+            action = ACTION_START
+        }
+        val restartPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            restartIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Floating Sidebar Active")
             .setContentText("Edge handle is ready. Tap to open settings or manage apps.")
             .setSmallIcon(R.drawable.ic_sidebar_handle)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .addAction(R.drawable.ic_refresh, "Restart Handle", restartPendingIntent)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
@@ -167,13 +182,13 @@ class FloatingOverlayService : Service() {
         )
 
         // Show edge handle by default
-        edgeHandleView?.show()
+        edgeHandleView?.ensureAttached()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                edgeHandleView?.show()
+                edgeHandleView?.ensureAttached()
             }
             ACTION_STOP -> {
                 stopSelf()
@@ -188,10 +203,19 @@ class FloatingOverlayService : Service() {
                 sidebarDockView?.updateDockSide(newSide)
             }
             else -> {
-                edgeHandleView?.show()
+                edgeHandleView?.ensureAttached()
             }
         }
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (preferencesManager.isServiceEnabled && Settings.canDrawOverlays(this)) {
+            // User swiped the app away from Recents task switcher.
+            // Schedule an immediate resurrection alarm to prevent OS task killer from terminating the overlay!
+            OverlayWatchdogReceiver.scheduleResurrection(this, 500L)
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -204,6 +228,11 @@ class FloatingOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        if (preferencesManager.isServiceEnabled && Settings.canDrawOverlays(this)) {
+            // Service was killed by OS (Low Memory Killer or system battery cleanup), not by user toggle!
+            // Schedule resurrection alarm so sidebar handle reappears immediately.
+            OverlayWatchdogReceiver.scheduleResurrection(this, 1000L)
+        }
         try {
             Shizuku.removeBinderReceivedListener(shizukuBinderListener)
         } catch (e: Exception) {

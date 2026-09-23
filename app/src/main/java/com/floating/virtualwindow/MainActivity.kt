@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
@@ -77,6 +78,8 @@ class MainActivity : AppCompatActivity() {
 
     // Workspace Views
     private lateinit var bannerPermissions: View
+    private lateinit var tvPermissionBannerTitle: TextView
+    private lateinit var tvPermissionBannerDesc: TextView
     private lateinit var btnQuickGrant: Button
     private lateinit var cardSidebarToggle: View
     private lateinit var tvSidebarToggleSubtitle: TextView
@@ -98,6 +101,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvAppVersionDisplay: TextView
     private lateinit var tvAppVersionStatus: TextView
     private lateinit var btnCheckUpdates: Button
+    private lateinit var tvBatteryOptStatus: TextView
+    private lateinit var btnBatteryOpt: Button
     private lateinit var btnVisitPortfolio: Button
     private lateinit var btnMessageDiscord: Button
 
@@ -110,6 +115,12 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
+    ) {
+        updatePermissionStates()
+    }
+
+    private val batteryOptimizationLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
     ) {
         updatePermissionStates()
     }
@@ -170,6 +181,8 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottomNav)
 
         bannerPermissions = findViewById(R.id.bannerPermissions)
+        tvPermissionBannerTitle = findViewById(R.id.tvPermissionBannerTitle)
+        tvPermissionBannerDesc = findViewById(R.id.tvPermissionBannerDesc)
         btnQuickGrant = findViewById(R.id.btnQuickGrant)
         cardSidebarToggle = findViewById(R.id.cardSidebarToggle)
         tvSidebarToggleSubtitle = findViewById(R.id.tvSidebarToggleSubtitle)
@@ -193,6 +206,8 @@ class MainActivity : AppCompatActivity() {
         tvAppVersionDisplay = findViewById(R.id.tvAppVersionDisplay)
         tvAppVersionStatus = findViewById(R.id.tvAppVersionStatus)
         btnCheckUpdates = findViewById(R.id.btnCheckUpdates)
+        tvBatteryOptStatus = findViewById(R.id.tvBatteryOptStatus)
+        btnBatteryOpt = findViewById(R.id.btnBatteryOpt)
         btnVisitPortfolio = findViewById(R.id.btnVisitPortfolio)
         btnMessageDiscord = findViewById(R.id.btnMessageDiscord)
 
@@ -285,6 +300,10 @@ class MainActivity : AppCompatActivity() {
 
         btnCheckUpdates.setOnClickListener {
             checkUpdateManual()
+        }
+
+        btnBatteryOpt.setOnClickListener {
+            requestIgnoreBatteryOptimization()
         }
 
         btnVisitPortfolio.setOnClickListener {
@@ -399,9 +418,56 @@ class MainActivity : AppCompatActivity() {
         overlayPermissionLauncher.launch(intent)
     }
 
+    private fun requestIgnoreBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                batteryOptimizationLauncher.launch(intent)
+            } catch (e: Exception) {
+                try {
+                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    batteryOptimizationLauncher.launch(intent)
+                } catch (ex: Exception) {
+                    Toast.makeText(this, "Please allow unrestricted battery usage in Settings", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     private fun updatePermissionStates() {
         val hasOverlay = Settings.canDrawOverlays(this)
-        bannerPermissions.visibility = if (hasOverlay) View.GONE else View.VISIBLE
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val isBatteryIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            powerManager?.isIgnoringBatteryOptimizations(packageName) == true
+        } else {
+            true
+        }
+
+        if (!hasOverlay) {
+            bannerPermissions.visibility = View.VISIBLE
+            tvPermissionBannerTitle.text = getString(R.string.overlay_permission_title)
+            tvPermissionBannerDesc.text = getString(R.string.overlay_permission_desc)
+            btnQuickGrant.text = getString(R.string.grant_permission)
+            btnQuickGrant.setOnClickListener {
+                requestOverlayPermission()
+            }
+        } else if (!isBatteryIgnored) {
+            bannerPermissions.visibility = View.VISIBLE
+            tvPermissionBannerTitle.text = "Prevent Sidebar Disappearing"
+            tvPermissionBannerDesc.text = "Allow 'Unrestricted' battery usage so Android doesn't kill the sidebar in background."
+            btnQuickGrant.text = "Keep Alive"
+            btnQuickGrant.setOnClickListener {
+                requestIgnoreBatteryOptimization()
+            }
+        } else {
+            bannerPermissions.visibility = View.GONE
+        }
+
+        tvBatteryOptStatus.text = if (isBatteryIgnored) "Active • Unrestricted" else "Optimized • Tap to allow unrestricted"
+        btnBatteryOpt.text = if (isBatteryIgnored) "Enabled" else "Allow"
+        btnBatteryOpt.isEnabled = !isBatteryIgnored
     }
 
     private fun updateServiceState() {

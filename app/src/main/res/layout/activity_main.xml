@@ -119,6 +119,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvPermissionBannerTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/overlay_permission_title"
@@ -127,6 +128,7 @@
                         android:fontFamily="sans-serif-medium" />
 
                     <TextView
+                        android:id="@+id/tvPermissionBannerDesc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/overlay_permission_desc"
@@ -484,6 +486,59 @@
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:visibility="gone" />
+
+            <!-- Background Persistence / Battery Optimization Card -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BACKGROUND PERSISTENCE"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_header"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Keep Alive in Background"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvBatteryOptStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Optimized • Tap to allow unrestricted"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnBatteryOpt"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Allow"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <!-- App Updates Card -->
             <TextView

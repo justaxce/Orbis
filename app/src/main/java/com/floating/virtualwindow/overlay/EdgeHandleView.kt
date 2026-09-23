@@ -165,10 +165,43 @@ class EdgeHandleView(
     }
 
     fun show() {
-        if (view.parent == null) {
+        if (!view.isAttachedToWindow && view.parent == null) {
             try {
                 windowManager.addView(view, layoutParams)
                 scheduleDimming()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else if (view.isAttachedToWindow) {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
+                view.alpha = 1.0f
+                scheduleDimming()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun ensureAttached() {
+        if (!view.isAttachedToWindow) {
+            if (view.parent != null) {
+                try {
+                    windowManager.removeViewImmediate(view)
+                } catch (e: Exception) {
+                    // Ignore
+                }
+            }
+            try {
+                windowManager.addView(view, layoutParams)
+                view.alpha = 1.0f
+                scheduleDimming()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            try {
+                windowManager.updateViewLayout(view, layoutParams)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

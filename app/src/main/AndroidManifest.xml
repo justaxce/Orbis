@@ -97,6 +97,7 @@
         <service
             android:name=".service.FloatingOverlayService"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
@@ -129,6 +130,18 @@
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Watchdog Receiver to Resurrect Overlay on Task Clear or System Events -->
+        <receiver
+            android:name=".receiver.OverlayWatchdogReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.floating.virtualwindow.ACTION_RESTART_OVERLAY" />
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
 
