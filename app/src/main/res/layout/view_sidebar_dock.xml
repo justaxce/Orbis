@@ -82,6 +82,57 @@
             android:textSize="9sp" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/btnToolFlashlight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingVertical="6dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/ivFlashlightIcon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_flashlight"
+            android:contentDescription="Flashlight" />
+
+        <TextView
+            android:id="@+id/tvFlashlightText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Torch"
+            android:textColor="@color/text_secondary"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- All Apps Drawer Button -->
+    <LinearLayout
+        android:id="@+id/btnToolAllApps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingVertical="6dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_all_apps"
+            android:contentDescription="All Apps" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All Apps"
+            android:textColor="@color/text_secondary"
+            android:textSize="9sp" />
+    </LinearLayout>
+
     <!-- Add Apps Button -->
     <LinearLayout
         android:id="@+id/btnAddApps"

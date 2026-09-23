@@ -350,6 +350,21 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
+        // Browser Superpowers Settings Toggles
+        findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.swAdBlockSetting)?.apply {
+            isChecked = preferencesManager.isAdBlockEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                preferencesManager.isAdBlockEnabled = isChecked
+            }
+        }
+
+        findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.swBgAudioSetting)?.apply {
+            isChecked = preferencesManager.isBackgroundAudioEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                preferencesManager.isBackgroundAudioEnabled = isChecked
+            }
+        }
+
         // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

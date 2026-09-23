@@ -40,8 +40,12 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.webkit.WebResourceResponse
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.BrowserHistoryManager
+import com.floating.virtualwindow.data.PreferencesManager
+import com.floating.virtualwindow.tools.adblock.AdBlockEngine
+import com.floating.virtualwindow.tools.download.MediaDownloadHelper
 
 @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
 class FloatingBrowserView @JvmOverloads constructor(
@@ -57,9 +61,13 @@ class FloatingBrowserView @JvmOverloads constructor(
     private val btnClearUrl: ImageButton
     private val btnRefresh: ImageButton
     private val btnToggleDesktopMode: ImageButton
+    private val btnAdBlock: ImageButton
+    private val btnDownloadMedia: ImageButton
     private val flOAuthPopupContainer: FrameLayout
     private var popupWebView: WebView? = null
     private var isDesktopMode: Boolean = false
+    private val preferencesManager: PreferencesManager = PreferencesManager(context)
+    private var currentDetectedMediaUrl: String? = null
 
     // Text Selection Toolbar
     private val llSelectionToolbar: LinearLayout
@@ -84,6 +92,8 @@ class FloatingBrowserView @JvmOverloads constructor(
         btnClearUrl = view.findViewById(R.id.btnClearUrl)
         btnRefresh = view.findViewById(R.id.btnBrowserRefresh)
         btnToggleDesktopMode = view.findViewById(R.id.btnToggleDesktopMode)
+        btnAdBlock = view.findViewById(R.id.btnAdBlock)
+        btnDownloadMedia = view.findViewById(R.id.btnDownloadMedia)
         flOAuthPopupContainer = view.findViewById(R.id.flOAuthPopupContainer)
 
         llSelectionToolbar = view.findViewById(R.id.llSelectionToolbar)
@@ -93,6 +103,7 @@ class FloatingBrowserView @JvmOverloads constructor(
         btnClearSelection = view.findViewById(R.id.btnClearSelection)
 
         updateDesktopButtonUi()
+        updateAdBlockButtonUi()
         setupWebView()
         setupListeners()
     }
@@ -156,10 +167,34 @@ class FloatingBrowserView @JvmOverloads constructor(
                 return true
             }
 
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                val urlStr = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
+
+                // Feature 4: Media Sniffer URL detection
+                if (MediaDownloadHelper.isMediaUrl(urlStr)) {
+                    post {
+                        currentDetectedMediaUrl = urlStr
+                        btnDownloadMedia.visibility = View.VISIBLE
+                    }
+                }
+
+                // Feature 1: Built-in AdBlocker & Privacy Shield
+                if (preferencesManager.isAdBlockEnabled && AdBlockEngine.shouldBlock(urlStr)) {
+                    return AdBlockEngine.createEmptyResponse()
+                }
+
+                return super.shouldInterceptRequest(view, request)
+            }
+
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 pbLoading.visibility = View.VISIBLE
                 etUrl.setText(url)
                 clearSelection()
+                currentDetectedMediaUrl = null
+                btnDownloadMedia.visibility = View.GONE
+                if (preferencesManager.isAdBlockEnabled) {
+                    webView.evaluateJavascript(AdBlockEngine.getCosmeticAdHidingScript(), null)
+                }
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -167,6 +202,11 @@ class FloatingBrowserView @JvmOverloads constructor(
                 injectSelectionListener()
                 injectHorizontalScrollAndCodeFix()
                 injectKeyboardAndNotificationListeners()
+                injectBackgroundAudioKeepAlive()
+                injectMediaSniffer()
+                if (preferencesManager.isAdBlockEnabled) {
+                    webView.evaluateJavascript(AdBlockEngine.getCosmeticAdHidingScript(), null)
+                }
                 try {
                     CookieManager.getInstance().flush()
                 } catch (e: Exception) {
@@ -295,6 +335,25 @@ class FloatingBrowserView @JvmOverloads constructor(
 
         btnToggleDesktopMode.setOnClickListener {
             toggleDesktopMode()
+        }
+
+        btnAdBlock.setOnClickListener {
+            val enabled = !preferencesManager.isAdBlockEnabled
+            preferencesManager.isAdBlockEnabled = enabled
+            updateAdBlockButtonUi()
+            val blocked = AdBlockEngine.blockedCount.get()
+            val text = if (enabled) "AdBlock ON ($blocked blocked)" else "AdBlock OFF"
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+            webView.reload()
+        }
+
+        btnDownloadMedia.setOnClickListener {
+            val url = currentDetectedMediaUrl
+            if (!url.isNullOrBlank()) {
+                MediaDownloadHelper.downloadMedia(context, url, webView.title)
+            } else {
+                Toast.makeText(context, "No media detected", Toast.LENGTH_SHORT).show()
+            }
         }
 
         btnClearUrl.setOnClickListener {
@@ -444,6 +503,14 @@ class FloatingBrowserView @JvmOverloads constructor(
             btnToggleDesktopMode.setColorFilter(context.getColor(R.color.accent))
         } else {
             btnToggleDesktopMode.setColorFilter(context.getColor(R.color.text_secondary))
+        }
+    }
+
+    private fun updateAdBlockButtonUi() {
+        if (preferencesManager.isAdBlockEnabled) {
+            btnAdBlock.setColorFilter(android.graphics.Color.parseColor("#10B981"))
+        } else {
+            btnAdBlock.setColorFilter(context.getColor(R.color.text_secondary))
         }
     }
 
@@ -862,6 +929,47 @@ class FloatingBrowserView @JvmOverloads constructor(
         }
     }
 
+    private fun injectBackgroundAudioKeepAlive() {
+        if (!preferencesManager.isBackgroundAudioEnabled) return
+        val js = """
+            (function() {
+                try {
+                    Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });
+                    Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });
+                    window.addEventListener('visibilitychange', function(e) {
+                        e.stopImmediatePropagation();
+                    }, true);
+                    window.addEventListener('blur', function(e) {
+                        e.stopImmediatePropagation();
+                    }, true);
+                } catch(e) {}
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
+
+    private fun injectMediaSniffer() {
+        val js = """
+            (function() {
+                function scanMedia() {
+                    var vids = document.querySelectorAll('video, audio');
+                    for (var i = 0; i < vids.length; i++) {
+                        var src = vids[i].currentSrc || vids[i].src;
+                        if (src && (src.indexOf('http://') === 0 || src.indexOf('https://') === 0) && src.indexOf('blob:') !== 0) {
+                            if (window.OrbisBridge && window.OrbisBridge.onMediaDetected) {
+                                window.OrbisBridge.onMediaDetected(src);
+                            }
+                        }
+                    }
+                }
+                document.addEventListener('play', scanMedia, true);
+                document.addEventListener('loadeddata', scanMedia, true);
+                scanMedia();
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
+
     fun destroy() {
         dismissOAuthPopup()
         webView.stopLoading()
@@ -869,6 +977,16 @@ class FloatingBrowserView @JvmOverloads constructor(
     }
 
     inner class OrbisBridge {
+        @JavascriptInterface
+        fun onMediaDetected(mediaUrl: String) {
+            post {
+                if (MediaDownloadHelper.isMediaUrl(mediaUrl)) {
+                    currentDetectedMediaUrl = mediaUrl
+                    btnDownloadMedia.visibility = View.VISIBLE
+                }
+            }
+        }
+
         @JavascriptInterface
         fun onTextSelected(text: String) {
             post {

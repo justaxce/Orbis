@@ -41,6 +41,26 @@
                 android:ellipsize="end" />
 
 
+            <!-- Ghost Mode (Pass-Through Click) -->
+            <ImageButton
+                android:id="@+id/btnGhostMode"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_ghost"
+                android:padding="5dp"
+                android:contentDescription="Ghost Mode (Click-Through)" />
+
+            <!-- New / Dual Window -->
+            <ImageButton
+                android:id="@+id/btnNewWindow"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_multi_window"
+                android:padding="5dp"
+                android:contentDescription="New Dual Window" />
+
             <!-- Orientation / Aspect Ratio Toggle (9:16 Portrait <-> 16:9 Landscape) -->
             <ImageButton
                 android:id="@+id/btnRotateRatio"

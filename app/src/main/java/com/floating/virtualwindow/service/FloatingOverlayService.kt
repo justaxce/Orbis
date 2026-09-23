@@ -18,12 +18,14 @@ import androidx.core.app.NotificationCompat
 import com.floating.virtualwindow.MainActivity
 import com.floating.virtualwindow.R
 import com.floating.virtualwindow.data.PreferencesManager
+import com.floating.virtualwindow.overlay.AllAppsDrawerView
 import com.floating.virtualwindow.overlay.BubbleDismissTargetView
 import com.floating.virtualwindow.overlay.EdgeHandleView
 import com.floating.virtualwindow.overlay.FloatingBubbleView
 import com.floating.virtualwindow.overlay.FloatingWindowView
 import com.floating.virtualwindow.overlay.SidebarDockView
 import com.floating.virtualwindow.receiver.OverlayWatchdogReceiver
+import com.floating.virtualwindow.tools.torch.TorchHelper
 import rikka.shizuku.Shizuku
 
 class FloatingOverlayService : Service() {
@@ -34,6 +36,8 @@ class FloatingOverlayService : Service() {
     private var edgeHandleView: EdgeHandleView? = null
     private var sidebarDockView: SidebarDockView? = null
     private var floatingWindowView: FloatingWindowView? = null
+    private var secondaryWindowView: FloatingWindowView? = null
+    private var allAppsDrawerView: AllAppsDrawerView? = null
     private var floatingBubbleView: FloatingBubbleView? = null
     private var bubbleDismissTargetView: BubbleDismissTargetView? = null
 
@@ -140,6 +144,17 @@ class FloatingOverlayService : Service() {
             }
         )
 
+        allAppsDrawerView = AllAppsDrawerView(this, windowManager) { packageName, appName, icon ->
+            lastAppIcon = icon
+            floatingBubbleView?.setIcon(icon)
+            floatingWindowView?.show()
+            floatingWindowView?.launchAppInWindow(packageName, appName, icon)
+        }
+
+        sidebarDockView?.onAllAppsRequested = {
+            allAppsDrawerView?.show()
+        }
+
         floatingWindowView = FloatingWindowView(
             context = this,
             windowManager = windowManager,
@@ -156,6 +171,9 @@ class FloatingOverlayService : Service() {
         ).apply {
             onNotificationReceived = {
                 floatingBubbleView?.setNotificationDotVisible(true)
+            }
+            onNewWindowRequested = {
+                openSecondaryWindow()
             }
         }
 
@@ -218,10 +236,38 @@ class FloatingOverlayService : Service() {
         }
     }
 
+    private fun openSecondaryWindow() {
+        if (secondaryWindowView == null) {
+            secondaryWindowView = FloatingWindowView(
+                context = this,
+                windowManager = windowManager,
+                onMinimizeRequested = {
+                    secondaryWindowView?.minimize()
+                },
+                onCloseRequested = {
+                    secondaryWindowView?.close()
+                    secondaryWindowView = null
+                }
+            ).apply {
+                val dm = resources.displayMetrics
+                layoutParams.x = (layoutParams.x + 80).coerceAtMost(dm.widthPixels - 320)
+                layoutParams.y = (layoutParams.y + 120).coerceAtMost(dm.heightPixels - 320)
+                onNewWindowRequested = {
+                    Toast.makeText(this@FloatingOverlayService, "Dual window already active", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        secondaryWindowView?.show()
+        secondaryWindowView?.openBrowser("https://www.google.com", "Window 2")
+        Toast.makeText(this, "Dual Window Opened 🪟", Toast.LENGTH_SHORT).show()
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         floatingWindowView?.handleOrientationChanged()
         floatingWindowView?.handleThemeChanged()
+        secondaryWindowView?.handleOrientationChanged()
+        secondaryWindowView?.handleThemeChanged()
         edgeHandleView?.handleOrientationChanged()
         sidebarDockView?.handleOrientationChanged()
         floatingBubbleView?.handleOrientationChanged()
@@ -238,8 +284,13 @@ class FloatingOverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        TorchHelper.turnOff(this)
         edgeHandleView?.hide()
         sidebarDockView?.hide()
+        allAppsDrawerView?.hide()
+        allAppsDrawerView = null
+        secondaryWindowView?.close()
+        secondaryWindowView = null
         floatingWindowView?.close()
         floatingBubbleView?.hide()
         bubbleDismissTargetView?.hide()

@@ -53,11 +53,17 @@ class FloatingWindowView(
     private val ivHeaderIcon: ImageView = view.findViewById(R.id.ivHeaderIcon)
     private val tvHeaderTitle: TextView = view.findViewById(R.id.tvHeaderTitle)
     private val windowHeader: LinearLayout = view.findViewById(R.id.windowHeader)
+    private val btnGhostMode: ImageButton = view.findViewById(R.id.btnGhostMode)
+    private val btnNewWindow: ImageButton = view.findViewById(R.id.btnNewWindow)
     private val btnRotateRatio: ImageButton = view.findViewById(R.id.btnRotateRatio)
     private val btnMinimize: ImageButton = view.findViewById(R.id.btnMinimize)
     private val btnMaximize: ImageButton = view.findViewById(R.id.btnMaximize)
     private val btnClose: ImageButton = view.findViewById(R.id.btnClose)
     private val contentContainer: FrameLayout = view.findViewById(R.id.windowContentContainer)
+    var isGhostMode: Boolean = false
+        private set
+    private var ghostExitPill: GhostModeExitPillView? = null
+    var onNewWindowRequested: (() -> Unit)? = null
     private val flResizeBR: FrameLayout = view.findViewById(R.id.flResizeBR)
     private val flResizeBL: FrameLayout = view.findViewById(R.id.flResizeBL)
     private val tvResizeBadge: TextView = view.findViewById(R.id.tvResizeBadge)
@@ -141,6 +147,10 @@ class FloatingWindowView(
             x = safeInitialX
             y = safeInitialY
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        }
+
+        ghostExitPill = GhostModeExitPillView(context, windowManager) {
+            setGhostMode(false)
         }
 
         setupDragHandle()
@@ -351,11 +361,20 @@ class FloatingWindowView(
     }
 
     private fun setupControls() {
+        btnGhostMode.setOnClickListener {
+            setGhostMode(!isGhostMode)
+        }
+
+        btnNewWindow.setOnClickListener {
+            onNewWindowRequested?.invoke()
+        }
+
         btnRotateRatio.setOnClickListener {
             toggleOrientationRatio()
         }
 
         btnMinimize.setOnClickListener {
+            if (isGhostMode) setGhostMode(false)
             onMinimizeRequested()
         }
 
@@ -364,8 +383,28 @@ class FloatingWindowView(
         }
 
         btnClose.setOnClickListener {
+            if (isGhostMode) setGhostMode(false)
             onCloseRequested()
         }
+    }
+
+    fun setGhostMode(enabled: Boolean) {
+        if (isGhostMode == enabled) return
+        isGhostMode = enabled
+        if (enabled) {
+            layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            layoutParams.alpha = 0.50f
+            ghostExitPill?.show()
+            btnGhostMode.setColorFilter(android.graphics.Color.parseColor("#818CF8"))
+            Toast.makeText(context, "Ghost Mode: Click-through active. Tap top pill to exit.", Toast.LENGTH_SHORT).show()
+        } else {
+            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+            layoutParams.alpha = 1.0f
+            ghostExitPill?.hide()
+            btnGhostMode.setColorFilter(null)
+            Toast.makeText(context, "Ghost Mode deactivated", Toast.LENGTH_SHORT).show()
+        }
+        updateLayout()
     }
 
     fun setWindowFocusable(focusable: Boolean) {
@@ -853,6 +892,9 @@ class FloatingWindowView(
      * Preserves the active WebView, scroll position, and running session intact.
      */
     fun minimize() {
+        if (isGhostMode) {
+            setGhostMode(false)
+        }
         isMinimized = true
         if (isKeyboardShifted) {
             keyboardAnimator?.cancel()
@@ -894,6 +936,9 @@ class FloatingWindowView(
      * Completely closes the window and releases resources.
      */
     fun close() {
+        if (isGhostMode) {
+            setGhostMode(false)
+        }
         cleanContent()
         if (view.parent != null) {
             try {

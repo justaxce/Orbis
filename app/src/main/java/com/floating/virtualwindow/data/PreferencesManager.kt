@@ -53,6 +53,14 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_AUTO_MINIMIZE_OUTSIDE, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_MINIMIZE_OUTSIDE, value).apply()
 
+    var isAdBlockEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AD_BLOCK_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_AD_BLOCK_ENABLED, value).apply()
+
+    var isBackgroundAudioEnabled: Boolean
+        get() = prefs.getBoolean(KEY_BACKGROUND_AUDIO_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_BACKGROUND_AUDIO_ENABLED, value).apply()
+
     companion object {
         private const val PREFS_NAME = "floating_virtual_window_prefs"
         private const val KEY_SERVICE_ENABLED = "service_enabled"
@@ -63,6 +71,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_WINDOW_HEIGHT = "window_height"
         private const val KEY_SELECTED_PACKAGES = "selected_packages"
         private const val KEY_AUTO_MINIMIZE_OUTSIDE = "auto_minimize_outside_tap"
+        private const val KEY_AD_BLOCK_ENABLED = "ad_block_enabled"
+        private const val KEY_BACKGROUND_AUDIO_ENABLED = "background_audio_enabled"
 
         const val MODE_ZERO_SETUP = 0
         const val MODE_ADVANCED = 1

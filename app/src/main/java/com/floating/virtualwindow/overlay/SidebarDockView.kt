@@ -65,6 +65,8 @@ class SidebarDockView(
         setupOutsideTouch()
     }
 
+    var onAllAppsRequested: (() -> Unit)? = null
+
     private fun setupQuickTools() {
         view.findViewById<View>(R.id.btnToolBrowser)?.setOnClickListener {
             onToolBrowserSelected()
@@ -73,6 +75,21 @@ class SidebarDockView(
 
         view.findViewById<View>(R.id.btnToolCalculator)?.setOnClickListener {
             onToolCalculatorSelected()
+            hide()
+        }
+
+        val ivFlashlight = view.findViewById<ImageView>(R.id.ivFlashlightIcon)
+        view.findViewById<View>(R.id.btnToolFlashlight)?.setOnClickListener {
+            val isOn = com.floating.virtualwindow.tools.torch.TorchHelper.toggleTorch(context)
+            if (isOn) {
+                ivFlashlight?.setColorFilter(android.graphics.Color.parseColor("#FBBF24"))
+            } else {
+                ivFlashlight?.setColorFilter(null)
+            }
+        }
+
+        view.findViewById<View>(R.id.btnToolAllApps)?.setOnClickListener {
+            onAllAppsRequested?.invoke()
             hide()
         }
 
