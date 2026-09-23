@@ -338,7 +338,7 @@ class FloatingWindowView(
     }
 
     private fun showResizeBadge(width: Int, height: Int) {
-        val tag = if (isLandscapeRatio) "🎮 16:9" else "📐 9:16"
+        val tag = if (isLandscapeRatio) "16:9" else "9:16"
         tvResizeBadge.text = "$tag • ${width} × ${height}"
         tvResizeBadge.alpha = 0f
         tvResizeBadge.visibility = View.VISIBLE
@@ -346,7 +346,7 @@ class FloatingWindowView(
     }
 
     private fun updateResizeBadge(width: Int, height: Int) {
-        val tag = if (isLandscapeRatio) "🎮 16:9" else "📐 9:16"
+        val tag = if (isLandscapeRatio) "16:9" else "9:16"
         tvResizeBadge.text = "$tag • ${width} × ${height}"
     }
 

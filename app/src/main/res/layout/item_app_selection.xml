@@ -43,7 +43,7 @@
                 android:background="@drawable/bg_web_badge"
                 android:paddingHorizontal="6dp"
                 android:paddingVertical="1dp"
-                android:text="🌐 Web Ready"
+                android:text="Web Ready"
                 android:textColor="@color/accent"
                 android:textSize="9sp"
                 android:fontFamily="sans-serif-medium"

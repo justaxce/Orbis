@@ -35,7 +35,7 @@ object TorchHelper {
                 val newState = !isTorchOn
                 cameraManager.setTorchMode(targetCameraId, newState)
                 isTorchOn = newState
-                val msg = if (isTorchOn) "🔦 Flashlight ON" else "Flashlight OFF"
+                val msg = if (isTorchOn) "Flashlight on" else "Flashlight off"
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 return isTorchOn
             } else {

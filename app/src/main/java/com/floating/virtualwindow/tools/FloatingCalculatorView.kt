@@ -235,7 +235,7 @@ class FloatingCalculatorView @JvmOverloads constructor(
             tvCalcResult.text = "0"
         }
 
-        // Backspace ⌫
+        // Backspace
         root.findViewById<Button>(R.id.btnCalcBackspace)?.setOnClickListener { btn ->
             btn.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
             onBackspacePressed()

@@ -180,10 +180,10 @@
                 android:layout_weight="1"
                 android:stretchColumns="*">
 
-                <!-- Row 1: C, ⌫, %, ÷ -->
+                <!-- Row 1: C, Backspace, %, ÷ -->
                 <TableRow android:layout_weight="1">
                     <Button android:id="@+id/btnCalcClear" android:text="C" android:textColor="@color/error" style="@style/Widget.Material3.Button.TonalButton" android:textSize="14sp" />
-                    <Button android:id="@+id/btnCalcBackspace" android:text="⌫" style="@style/Widget.Material3.Button.TonalButton" android:textSize="14sp" />
+                    <Button android:id="@+id/btnCalcBackspace" app:icon="@drawable/ic_backspace" app:iconGravity="textStart" app:iconPadding="0dp" style="@style/Widget.Material3.Button.TonalButton" />
                     <Button android:id="@+id/btnCalcPercent" android:text="%" style="@style/Widget.Material3.Button.TonalButton" android:textSize="14sp" />
                     <Button android:id="@+id/btnCalcDiv" android:text="÷" android:textColor="@color/accent" style="@style/Widget.Material3.Button.TonalButton" android:textSize="17sp" />
                 </TableRow>

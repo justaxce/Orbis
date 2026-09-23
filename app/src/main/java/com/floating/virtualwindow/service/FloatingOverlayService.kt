@@ -259,7 +259,7 @@ class FloatingOverlayService : Service() {
         }
         secondaryWindowView?.show()
         secondaryWindowView?.openBrowser("https://www.google.com", "Window 2")
-        Toast.makeText(this, "Dual Window Opened 🪟", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Dual window opened", Toast.LENGTH_SHORT).show()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

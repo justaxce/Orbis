@@ -575,7 +575,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="🛡️ Built-in AdBlocker"
+                            android:text="AdBlock Shield"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
@@ -618,7 +618,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="🎵 Background Audio Playback"
+                            android:text="Background Audio Playback"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
@@ -819,7 +819,7 @@
                         android:layout_height="42dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="6dp"
-                        android:text="🌐 Portfolio"
+                        android:text="Portfolio"
                         android:textColor="@color/accent"
                         android:textSize="12sp"
                         app:strokeColor="@color/accent" />
@@ -832,7 +832,7 @@
                         android:layout_height="42dp"
                         android:layout_weight="1"
                         android:layout_marginStart="6dp"
-                        android:text="💬 Discord"
+                        android:text="Discord"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp"
                         android:backgroundTint="#5865F2" />
